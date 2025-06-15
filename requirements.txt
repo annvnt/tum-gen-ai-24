@@ -1,3 +1,15 @@
+kagglehub
+huggingface_hub
+kaggle
+
+# https://huggingface.co/docs/datasets/en/loading
+datasets
+pandas
+
+# file types
+openpyxl
+pdfplumber
+charset-normalizer
+
 requests
 beautifulsoup4
-kagglehub
