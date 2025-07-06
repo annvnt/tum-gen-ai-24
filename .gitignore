@@ -53,8 +53,8 @@ venv.bak/
 .env.local
 .env.*.local
 
-# Vector database directory
-vdb/
+# Vector database venv directory (but allow other vdb files)
+vdb/venv/
 
 # Jupyter Notebook
 .ipynb_checkpoints
