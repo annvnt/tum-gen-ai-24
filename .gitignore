@@ -1,0 +1,75 @@
+# Logs
+web/logs
+web/*.log
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+web/pnpm-debug.log*
+web/lerna-debug.log*
+
+# Dependency directories
+web/node_modules
+
+# Build outputs
+web/dist
+web/dist-ssr
+
+# Local env files
+web/*.local
+
+# Editor directories and files
+web/.vscode/*
+!web/.vscode/extensions.json
+web/.idea
+web/.DS_Store
+web/*.suo
+web/*.ntvs*
+web/*.njsproj
+web/*.sln
+web/*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+*.eggs
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Vector database venv directory (but allow other vdb files)
+vdb/venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
