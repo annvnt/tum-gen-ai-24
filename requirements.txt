@@ -13,3 +13,7 @@ charset-normalizer
 
 requests
 beautifulsoup4
+
+openai
+python-dotenv
+pandas
