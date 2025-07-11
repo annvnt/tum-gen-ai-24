@@ -110,16 +110,22 @@
 
   h1 {
     /* @apply  uppercase pt-8 pb-4 */
-     @apply text-foreground font-extrabold tracking-tight text-3xl 
+     @apply text-foreground font-black text-3xl 
      pt-8 pb-4 tracking-widest uppercase; 
 
   } 
-
+  h2 {
+    @apply text-foreground font-bold tracking-wide text-xl 
+    tracking-wide; 
+  }
   div {
-    @apply text-lg rounded-sm ;
+    @apply text-base rounded-sm ;
   }
   p {
-    @apply text-muted-foreground text-sm pb-4;
+    @apply text-muted-foreground text-sm;
+  }
+  span {
+    @apply text-xs
   }
 }
 

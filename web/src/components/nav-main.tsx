@@ -1,6 +1,6 @@
 "use client"
 
-import { MailIcon, PlusCircleIcon, type LucideIcon } from "lucide-react"
+import { MailIcon, PlusCircleIcon, MoreHorizontalIcon, type LucideIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -51,9 +51,15 @@ export function NavMain({
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>
               </SidebarMenuButton>
+
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+
+          <SidebarMenuButton className="text-sidebar-foreground/70">
+            <MoreHorizontalIcon className="text-sidebar-foreground/70" />
+            <span>All projects</span>
+          </SidebarMenuButton>
       </SidebarGroupContent>
     </SidebarGroup>
   )
