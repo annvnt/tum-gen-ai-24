@@ -228,28 +228,29 @@ export function ChatInterface() {
   const capabilities = [
     {
       icon: FileText,
-      label: "Analyze financial reports",
-      color: "bg-blue-200",
-      textColor: "text-blue-700",
+      label: "Generate Financial Report ",
+    color: "bg-[hsl(var(--chart-1)/0.2)]",
+    textColor: "text-[hsl(var(--chart-1))]",
     },
-    {
-      icon: Calculator,
-      label: "Calculate tax estimates",
-      color: "bg-emerald-200",
-      textColor: "text-emerald-700",
-    },
+
     {
       icon: BarChart3,
-      label: "Review budget analysis",
-      color: "bg-purple-200",
-      textColor: "text-purple-700",
+      label: "Analyse my Financial Report",
+    color: "bg-[hsl(var(--chart-2)/0.2)]",
+    textColor: "text-[hsl(var(--chart-2))]",
     },
-    {
-      icon: Calendar,
-      label: "Plan quarterly reviews",
-      color: "bg-orange-200",
-      textColor: "text-orange-700",
+        {
+      icon: Calculator,
+      label: "Calculate tax estimates",
+    color: "bg-[hsl(var(--chart-3)/0.2)]",
+    textColor: "text-[hsl(var(--chart-3))]",
     },
+    // {
+    //   icon: Calendar,
+    //   label: "Plan quarterly reviews",
+    //   color: "bg-orange-200",
+    //   textColor: "text-orange-700",
+    // },
   ];
 
   return (
@@ -290,7 +291,7 @@ export function ChatInterface() {
                     </div>
 
 
-                    {/* ------------------------------------------------ Files ------------------------------------------------ */}
+                    {/* ------------------------------------------------ Files Management ------------------------------------------------ */}
                     <div className="flex flex-row gap-8  justify-items-start text-center w-full ">
                       {/* File upload */}
                       <div 
@@ -299,7 +300,7 @@ export function ChatInterface() {
                                     h-full max-w-7xl min-h-80 cursor-pointer pb-8
                                     bg-muted/20 hover:bg-muted/60 hover:border-ring transition-colors
                                     transition-all duration-500
-                                    ${files.length > 0 ? "w-1/2" : "w-full"} 
+                                    ${files.length > 0 ? "w-full" : "w-full"} 
                                     ${isDragging
                                       ? "bg-primary/5 border-ring" : ""
                                   }
@@ -331,9 +332,9 @@ export function ChatInterface() {
 
                       </div>
 
-                      <div className={`flex flex-col ${files.length > 0 ? "w-1/2 block" : "hidden"}`}>
-                        <Card className="p-4 border-0 shadow-sm rounded-2xl bg-white">
-                          <div className="flex items-center justify-items-start mb-6">
+                      <div className={`flex flex-col ${files.length > 0 ? "w-full block" : "hidden"}`}>
+                        <Card className="p-4 border-1 shadow-sm">
+                          <div className="flex items-center justify-items-start mb-4">
                             <h2 className="">
                               Uploaded files
                             </h2>
@@ -349,7 +350,7 @@ export function ChatInterface() {
                             </div>
                           </div> */}
                           </div>
-                          <ScrollArea className="h-80 pr-4">
+                          <ScrollArea className="h-60 pr-4">
                             <div className="space-y-3">
                               {filteredFiles.length === 0 ? (
                                 <div className="text-center ">
@@ -362,14 +363,14 @@ export function ChatInterface() {
                                 filteredFiles.map((file) => (
                                   <div
                                     key={file.id}
-                                    className="flex items-center gap-4 p-4 bg-muted/20  hover:hover:bg-muted/60 transition-colors"
+                                    className="flex items-center justify-center min-w-100 gap-4 p-4 bg-muted/20  hover:hover:bg-muted/60 transition-colors"
                                   >
                                     <div className="flex-shrink-0">
                                       <div className="text-2xl">{getFileIcon(file.type)}</div>
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 mb-1 w-80">
+                                      <div className="flex items-center gap-2 mb-1 w-full">
                                         <div className="text-left max-w-60 truncate">
                                           {file.name}
                                         </div>
@@ -431,7 +432,6 @@ export function ChatInterface() {
                               )}
                             </div>
                           </ScrollArea>
-
                         </Card>
                       </div>
                     </div>
@@ -439,7 +439,7 @@ export function ChatInterface() {
 
 
                     {/* ------------------------------------------------ Chat ------------------------------------------------*/}
-                    <div className="w-full max-w-7xl">
+                    <div className="flex flex-col gap-4 w-full max-w-7xl">
                       <div className="relative group">
                         <Textarea
                           rows={4}
@@ -488,36 +488,42 @@ export function ChatInterface() {
                           Voice
                         </Button>
                         </div> */}
-                    </div>
 
-                    {/* Capabilities grid
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+                    {/* {/* Capabilities grid */}
+                                          {/* <div className={`flex flex-col ${files.length > 0 ? "w-1/2 block" : "hidden"}`}> */}
+
+                        <div className={`flex gap-4 justify-center items-center ${files.length > 0 ? "w-full max-w-7xl " : "hidden"} transition-opacity`}>
                           {capabilities.map((capability, index) => {
                             const Icon = capability.icon;
                             return (
-                              <Card
+                              <Button
+                                variant="secondary"
                                 key={index}
-                                className="group relative p-6 cursor-pointer border-0 bg-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden"
+                                className="group relative tansition-opacity"
+                                // border-0 bg-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden
                                 onClick={() => setMessage(capability.label)}
                               >
-                                <div
+                                {/* <div
                                   className={`absolute inset-0 ${capability.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
-                                />
+                                /> */}
                                 <div className="relative flex items-center gap-4">
                                   <div
-                                    className={`p-3 rounded-xl ${capability.color} shadow-lg`}
+                                    className={``} // p-3 rounded-xl ${capability.color} shadow-lg
                                   >
-                                    <Icon className={`h-5 w-5 ${capability.textColor}`} />
+                                    <Icon className={`h-4 w-4 ${capability.textColor}`} />
                                   </div>
-                                  <span className="text-base font-medium text-gray-800 group-hover:text-gray-900 transition-colors duration-200">
+                                  <div className="transition-colors duration-500"> 
+                                    {/* group-hover:text-gray-900 transition-colors duration-200   */}
                                     {capability.label}
-                                  </span>
+                                  </div>
                                 </div>
-                              </Card>
+                              </Button>
                             );
                           })}
-                        </div> */}
+                        </div>
                   </div>
+                                      </div>
+
                 ) : (
                   <div className="max-w-4xl mx-auto py-8 px-6 space-y-8">
                     {messages.map((msg, index) => (
