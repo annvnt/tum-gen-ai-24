@@ -38,6 +38,8 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useRef, useEffect } from "react";
+
 
 
 interface UploadedFile {
@@ -229,21 +231,21 @@ export function ChatInterface() {
     {
       icon: FileText,
       label: "Generate Financial Report ",
-    color: "bg-[hsl(var(--chart-1)/0.2)]",
-    textColor: "text-[hsl(var(--chart-1))]",
+      color: "bg-[hsl(var(--chart-1)/0.2)]",
+      textColor: "text-[hsl(var(--chart-1))]",
     },
 
     {
       icon: BarChart3,
       label: "Analyse my Financial Report",
-    color: "bg-[hsl(var(--chart-2)/0.2)]",
-    textColor: "text-[hsl(var(--chart-2))]",
+      color: "bg-[hsl(var(--chart-2)/0.2)]",
+      textColor: "text-[hsl(var(--chart-2))]",
     },
-        {
+    {
       icon: Calculator,
       label: "Calculate tax estimates",
-    color: "bg-[hsl(var(--chart-3)/0.2)]",
-    textColor: "text-[hsl(var(--chart-3))]",
+      color: "bg-[hsl(var(--chart-3)/0.2)]",
+      textColor: "text-[hsl(var(--chart-3))]",
     },
     // {
     //   icon: Calendar,
@@ -253,10 +255,18 @@ export function ChatInterface() {
     // },
   ];
 
+  const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+
+
   return (
     <SidebarProvider>
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset  >
         <SiteHeader />
         {/* Settings Button */}
         {/* <div className="absolute top-4 right-4 z-10">
@@ -294,7 +304,7 @@ export function ChatInterface() {
                     {/* ------------------------------------------------ Files Management ------------------------------------------------ */}
                     <div className="flex flex-row gap-8  justify-items-start text-center w-full ">
                       {/* File upload */}
-                      <div 
+                      <div
                         className={`border-2 border-dashed border-muted
                                     p-8 flex flex-col items-center justify-center text-center gap-4
                                     h-full max-w-7xl min-h-80 cursor-pointer pb-8
@@ -302,8 +312,8 @@ export function ChatInterface() {
                                     transition-all duration-500
                                     ${files.length > 0 ? "w-full" : "w-full"} 
                                     ${isDragging
-                                      ? "bg-primary/5 border-ring" : ""
-                                  }
+                            ? "bg-primary/5 border-ring" : ""
+                          }
                                   `}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
@@ -489,94 +499,117 @@ export function ChatInterface() {
                         </Button>
                         </div> */}
 
-                    {/* {/* Capabilities grid */}
-                                          {/* <div className={`flex flex-col ${files.length > 0 ? "w-1/2 block" : "hidden"}`}> */}
-
-                        <div className={`flex gap-4 justify-center items-center ${files.length > 0 ? "w-full max-w-7xl " : "hidden"} transition-opacity`}>
-                          {capabilities.map((capability, index) => {
-                            const Icon = capability.icon;
-                            return (
-                              <Button
-                                variant="secondary"
-                                key={index}
-                                className="group relative tansition-opacity"
-                                // border-0 bg-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden
-                                onClick={() => setMessage(capability.label)}
-                              >
-                                {/* <div
+                      {/* {/* Capabilities grid */}
+                      {/* <div className={`flex flex-col ${files.length > 0 ? "w-1/2 block" : "hidden"}`}> */}
+                      <div className={`flex gap-4 justify-center items-center ${files.length > 0 ? "w-full max-w-7xl " : "hidden"} transition-opacity`}>
+                        {capabilities.map((capability, index) => {
+                          const Icon = capability.icon;
+                          return (
+                            <Button
+                              variant="secondary"
+                              key={index}
+                              className="group relative tansition-opacity"
+                              // border-0 bg-white shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden
+                              onClick={() => setMessage(capability.label)}
+                            >
+                              {/* <div
                                   className={`absolute inset-0 ${capability.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
                                 /> */}
-                                <div className="relative flex items-center gap-4">
-                                  <div
-                                    className={``} // p-3 rounded-xl ${capability.color} shadow-lg
-                                  >
-                                    <Icon className={`h-4 w-4 ${capability.textColor}`} />
-                                  </div>
-                                  <div className="transition-colors duration-500"> 
-                                    {/* group-hover:text-gray-900 transition-colors duration-200   */}
-                                    {capability.label}
-                                  </div>
+                              <div className="relative flex items-center gap-4">
+                                <div
+                                  className={``} // p-3 rounded-xl ${capability.color} shadow-lg
+                                >
+                                  <Icon className={`h-4 w-4 ${capability.textColor}`} />
                                 </div>
-                              </Button>
-                            );
-                          })}
-                        </div>
+                                <div className="transition-colors duration-500">
+                                  {/* group-hover:text-gray-900 transition-colors duration-200   */}
+                                  {capability.label}
+                                </div>
+                              </div>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
-                                      </div>
 
                 ) : (
-                  <div className="max-w-4xl mx-auto py-8 px-6 space-y-8">
-                    {messages.map((msg, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"
-                          }`}
-                      >
-                        <div
-                          className={`max-w-[75%] p-6  shadow-lg ${msg.type === "user"
-                            ? "bg-gray-900 text-white"
-                            : "bg-white text-gray-800 border border-gray-100"
-                            }`}
-                        >
-                          <p className="text-base leading-relaxed">{msg.content}</p>
-                          <p
-                            className={`text-xs mt-3 ${msg.type === "user" ? "text-gray-400" : "text-gray-500"
-                              }`}
+                  <div className="flex flex-col h-screen  overflow-hidden">
+                    {/* Scrollable chat area */}
+                    <ScrollArea className="flex-1 overflow-y-auto">
+                      <div className="space-y-6 px-4 py-8">
+                        {messages.map((msg, index) => (
+                          <div key={index} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
+                            <div className="max-w-[75%] p-4 rounded-md bg-muted text-foreground shadow">
+                              <p>{msg.content}</p>
+                              <p className="text-xs mt-2 text-muted-foreground">
+                                {msg.timestamp.toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        <div ref={bottomRef} />
+                      </div>
+                    </ScrollArea>
+
+                    {/* Fixed input at bottom */}
+                    <div className="border-t border-border bg-background px-4 py-4">
+                      <div className="max-w-4xl mx-auto">
+                        <div className="relative group">
+                          <Textarea
+                            rows={4}
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            placeholder="Add a follow up..."
+                            className="w-full pr-12 max-h-24 resize-none overflow-y-auto shadow"
+                          />
+                          <Button
+                            onClick={handleSend}
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-1/2 right-3 -translate-y-1/2"
                           >
-                            {msg.timestamp.toLocaleTimeString()}
-                          </p>
+                            <SendHorizonal size={24} />
+                          </Button>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
+
+
+
                 )}
               </div>
 
               {/* Input Area - for when there are messages */}
-              {messages.length > 0 && (
-                <div className="border-t border-gray-100 bg-white/80 backdrop-blur-sm">
-                  <div className="max-w-4xl mx-auto p-6">
-                    <div className="flex items-end">
-                      <div className="flex-1 relative">
-                        <Input
-                          value={message}
-                          onChange={(e) => setMessage(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                          placeholder="Ask a follow-up question..."
-                          className="h-14 text-base border-2 border-gray-200  bg-white focus:border-teal-300 focus:shadow-lg transition-all duration-300 pl-6 pr-4"
-                        />
-                      </div>
-                      <Button
-                        onClick={handleSend}
-                        disabled={!message.trim()}
-                        className="h-14 w-14 p-0 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 shadow-lg transition-all duration-200"
-                      >
-                        <Send className="h-5 w-5 text-white" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* {messages.length > 0 && (  */}
+              {/* // <div className="backdrop-blur-sm">
+                //   <div className="w-full max-w-4xl mx-auto">
+                //     <div className="flex flex-col gap-4 relative group items-center justify-top">
+                //         <Textarea
+                //           value={message}
+                //           rows={4}
+                //           onChange={(e) => setMessage(e.target.value)}
+                //           onKeyPress={handleKeyPress}
+                //           placeholder="Ask a follow-up question..."
+                //           className="w-full max-h-24 pr-12 shadow-md transition-all duration-300  resize-none 
+                //           overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground scrollbar-track-muted"
+                //           //h-14 text-base border-2 border-gray-200  bg-white focus:border-teal-300 focus:shadow-lg transition-all duration-300 pl-6 pr-4
+                //         />
+                //         <Button
+                //           onClick={handleSend}
+                //           size="icon"
+                //           variant="ghost"
+                //           className="absolute top-1/2 right-3 -translate-y-1/2"
+                //         >
+                //           <SendHorizonal size={48} strokeWidth={3} />
+                //         </Button>                    
+                //     </div>
+                //   </div>
+                // </div>
+              // ) */}
+
             </div>
           </div>
         </div>
