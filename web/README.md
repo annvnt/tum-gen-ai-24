@@ -1,73 +1,78 @@
-# Welcome to your gen project
+# Financial Analyzer - Next.js Application
 
-## Project info
+A web application for uploading and analyzing financial Excel files using OpenAI GPT-4.
 
-**URL**: https://gen.dev/projects/938a83f8-f847-44a5-a9f1-9d3c62cc10b9
+## Features
 
-## How can I edit this code?
+- Excel file upload (drag & drop)
+- Automatic financial data extraction
+- AI-powered financial analysis
+- Interactive report display
+- Excel export functionality
+- Responsive design
 
-There are several ways of editing your application.
+## Setup
 
-**Use gen**
+1. Install dependencies:
+```bash
+npm install
+```
 
-Simply visit the [gen Project](https://gen.dev/projects/938a83f8-f847-44a5-a9f1-9d3c62cc10b9) and start prompting.
+2. Set up environment variables:
+Create a `.env.local` file and add your OpenAI API key:
+```
+OPENAI_API_KEY=your_openai_api_key_here
+```
 
-Changes made via gen will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in gen.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Run the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open [http://localhost:3000](http://localhost:3000)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```
+financial-analyzer/
+├── app/
+│   ├── api/
+│   │   └── financial/
+│   │       ├── upload/         # Excel upload endpoint
+│   │       └── export/         # Report export endpoint
+│   ├── components/
+│   │   ├── FileUpload.tsx      # File upload component
+│   │   └── ReportDisplay.tsx   # Report display component
+│   ├── lib/
+│   │   ├── openai.ts          # OpenAI integration
+│   │   └── indicators.ts       # Financial indicators
+│   ├── types/
+│   │   └── financial.ts        # TypeScript types
+│   ├── globals.css            # Global styles
+│   ├── layout.tsx             # Root layout
+│   └── page.tsx               # Home page
+├── public/                     # Static assets
+├── .env.local                 # Environment variables
+├── next.config.js             # Next.js config
+├── tailwind.config.js         # Tailwind config
+├── tsconfig.json              # TypeScript config
+└── package.json               # Dependencies
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## API Endpoints
 
-## What technologies are used for this project?
+### POST /api/financial/upload
+Upload Excel file and get financial analysis
 
-This project is built with:
+### POST /api/financial/export/{reportId}
+Export report as Excel file
 
-- Vite
+## Technologies Used
+
+- Next.js 14+ (App Router)
 - TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [gen](https://gen.dev/projects/938a83f8-f847-44a5-a9f1-9d3c62cc10b9) and click on Share -> Publish.
-
-## Can I connect a custom domain to my gen project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.gen.dev/tips-tricks/custom-domain#step-by-step-guide)
+- OpenAI GPT-4
+- XLSX for Excel processing
+- React Dropzone
+- Lucide React icons
