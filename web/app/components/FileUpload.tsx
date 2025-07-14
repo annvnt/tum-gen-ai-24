@@ -1,9 +1,7 @@
 'use client'
 
-import React, { useCallback } from 'react'
-import { useDropzone } from 'react-dropzone'
+import React, { useCallback, useState } from 'react'
 import { Upload, FileSpreadsheet, Loader2 } from 'lucide-react'
-import axios from 'axios'
 import { FinancialReport } from '../types/financial'
 
 interface FileUploadProps {
@@ -13,25 +11,25 @@ interface FileUploadProps {
 }
 
 export default function FileUpload({ onReportGenerated, loading, setLoading }: FileUploadProps) {
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (!file) return
+  const [isDragActive, setIsDragActive] = useState(false)
 
+  const handleFileUpload = useCallback(async (file: File) => {
     setLoading(true)
     const formData = new FormData()
     formData.append('file', file)
 
     try {
-      const response = await axios.post('/api/financial/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await fetch('/api/financial/upload', {
+        method: 'POST',
+        body: formData,
       })
 
-      if (response.data.success) {
-        onReportGenerated(response.data.report)
+      const data = await response.json()
+
+      if (data.success) {
+        onReportGenerated(data.report)
       } else {
-        alert('Error: ' + response.data.error)
+        alert('Error: ' + data.error)
       }
     } catch (error) {
       console.error('Upload error:', error)
@@ -41,26 +39,62 @@ export default function FileUpload({ onReportGenerated, loading, setLoading }: F
     }
   }, [onReportGenerated, setLoading])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.ms-excel': ['.xls'],
-    },
-    maxFiles: 1,
-    disabled: loading,
-  })
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragActive(false)
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        handleFileUpload(file)
+      } else {
+        alert('Please upload an Excel file (.xlsx or .xls)')
+      }
+    }
+  }, [handleFileUpload])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragActive(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragActive(false)
+  }, [])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      handleFileUpload(files[0])
+    }
+  }, [handleFileUpload])
 
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div
-        {...getRootProps()}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors
           ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
           ${loading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
+        onClick={() => {
+          if (!loading) {
+            document.getElementById('file-input')?.click()
+          }
+        }}
       >
-        <input {...getInputProps()} />
+        <input
+          id="file-input"
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={loading}
+        />
         
         <div className="flex flex-col items-center">
           {loading ? (

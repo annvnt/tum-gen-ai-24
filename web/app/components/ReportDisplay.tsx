@@ -3,8 +3,6 @@
 import React from 'react'
 import { FinancialReport, FinancialIndicator } from '../types/financial'
 import { Download, TrendingUp, TrendingDown } from 'lucide-react'
-import axios from 'axios'
-
 interface ReportDisplayProps {
   report: FinancialReport
 }
@@ -12,17 +10,26 @@ interface ReportDisplayProps {
 export default function ReportDisplay({ report }: ReportDisplayProps) {
   const handleDownload = async () => {
     try {
-      const response = await axios.post(`/api/financial/export/${report.reportId}`, {}, {
-        responseType: 'blob'
+      const response = await fetch(`/api/financial/export/${report.reportId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
       
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      if (!response.ok) {
+        throw new Error('Failed to download report')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
       link.setAttribute('download', `financial-report-${report.reportId}.xlsx`)
       document.body.appendChild(link)
       link.click()
       link.remove()
+      window.URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Download error:', error)
       alert('Failed to download report')

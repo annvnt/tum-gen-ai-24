@@ -6,7 +6,18 @@
       "Bash(cp:*)",
       "Bash(npm install:*)",
       "Bash(rm:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(python:*)",
+      "Bash(../excel_ocr/venv/bin/pip install -r ../excel_ocr/requirements.txt)",
+      "Bash(../excel_ocr/venv/bin/python:*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(npm run build:*)",
+      "Bash(kill:*)",
+      "Bash(PYTHONPATH=../excel_ocr ../excel_ocr/venv/bin/python -c \"import sys; sys.path.append('../excel_ocr'); from financial_report_llm_demo import setup_environment; print('Testing OpenAI setup...'); setup_environment(); print('Success!')\")",
+      "Bash(pkill:*)",
+      "Bash(../excel_ocr/venv/bin/pip install --upgrade openpyxl)"
     ],
     "deny": []
   }

@@ -1,73 +1,114 @@
-import { NextRequest, NextResponse } from 'next/server'
-import * as XLSX from 'xlsx'
-import { analyzeFinancialData } from '@/app/lib/openai'
-import { financialIndicators } from '@/app/lib/indicators'
+import { NextRequest, NextResponse } from 'next/server';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File
+    // Get the form data from the request
+    const formData = await request.formData();
     
-    if (!file) {
-      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 })
+    // Upload to backend
+    const uploadResponse = await fetch(`${BACKEND_URL}/api/financial/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      throw new Error(`Backend upload failed: ${errorText}`);
     }
 
-    // Read the Excel file
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
-    const sheetName = workbook.SheetNames[0]
-    const worksheet = workbook.Sheets[sheetName]
-    
-    // Convert to JSON
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 })
-    
-    // Find the row with "Code"
-    let startIndex = -1
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i] as any[]
-      if (row.some(cell => String(cell).toLowerCase().includes('code'))) {
-        startIndex = i
-        break
-      }
+    const uploadResult = await uploadResponse.json();
+
+    // Immediately analyze the uploaded file
+    const analyzeResponse = await fetch(`${BACKEND_URL}/api/financial/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        file_id: uploadResult.file_id,
+      }),
+    });
+
+    if (!analyzeResponse.ok) {
+      const errorText = await analyzeResponse.text();
+      throw new Error(`Backend analysis failed: ${errorText}`);
     }
-    
-    if (startIndex === -1) {
-      return NextResponse.json({ success: false, error: 'Could not find "Code" column in the Excel file' }, { status: 400 })
-    }
-    
-    // Extract data from the Code row onwards
-    const headers = data[startIndex] as string[]
-    const rows = data.slice(startIndex + 1)
-    
-    // Convert to table string for GPT
-    let tableStr = headers.join('\t') + '\n'
-    for (const row of rows) {
-      tableStr += (row as any[]).join('\t') + '\n'
-    }
-    
-    // Analyze with GPT
-    const analysis = await analyzeFinancialData(tableStr, financialIndicators)
-    
-    // Generate report ID
-    const reportId = Date.now().toString()
-    
+
+    const analysisResult = await analyzeResponse.json();
+
+    // Transform backend response to match frontend expectations
     const report = {
-      reportId,
+      reportId: analysisResult.report_id,
       createdAt: new Date().toISOString(),
-      summary: analysis.summary,
-      tables: analysis.tables
-    }
-    
-    // In a real app, you would save this to a database
-    // For now, we'll just return it
-    
-    return NextResponse.json({ success: true, report })
-    
+      summary: analysisResult.summary,
+      tables: {
+        balanceSheet: transformTableData(analysisResult.tables?.balance_sheet || []),
+        incomeStatement: transformTableData(analysisResult.tables?.income_statement || []),
+        cashFlowStatement: transformTableData(analysisResult.tables?.cash_flow_statement || []),
+      },
+    };
+
+    return NextResponse.json({
+      success: true,
+      report,
+    });
+
   } catch (error) {
-    console.error('Error processing file:', error)
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to process file' 
-    }, { status: 500 })
+    console.error('API Error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      { status: 500 }
+    );
   }
+}
+
+function transformTableData(backendData: any[]): any[] {
+  if (!Array.isArray(backendData)) {
+    return [];
+  }
+
+  return backendData.map((item: any) => {
+    // Handle different possible structures from backend
+    if (typeof item === 'object' && item !== null) {
+      // Try to find indicator name and year columns
+      const keys = Object.keys(item);
+      const indicatorKey = keys.find(key => 
+        key.toLowerCase().includes('indicator') || 
+        key.toLowerCase().includes('item') ||
+        key.toLowerCase().includes('name') ||
+        keys.indexOf(key) === 0
+      ) || keys[0];
+
+      const currentYearKey = keys.find(key => 
+        key.includes('2024') || 
+        key.toLowerCase().includes('current') ||
+        key.toLowerCase().includes('this') ||
+        keys.indexOf(key) === 1
+      ) || keys[1];
+
+      const previousYearKey = keys.find(key => 
+        key.includes('2023') || 
+        key.toLowerCase().includes('previous') ||
+        key.toLowerCase().includes('last') ||
+        keys.indexOf(key) === 2
+      ) || keys[2];
+
+      return {
+        indicator: item[indicatorKey] || 'Unknown',
+        currentYear: item[currentYearKey] || 0,
+        previousYear: item[previousYearKey] || 0,
+      };
+    }
+
+    return {
+      indicator: 'Unknown',
+      currentYear: 0,
+      previousYear: 0,
+    };
+  });
 }

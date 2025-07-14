@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import {
   Send,
@@ -13,10 +15,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 export function ChatInterface() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
     Array<{ type: "user" | "bot"; content: string; timestamp: Date }>
@@ -87,7 +89,7 @@ export function ChatInterface() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/knowledge-base")}
+          onClick={() => router.push("/knowledge-base")}
           className="p-3 bg-white/80 backdrop-blur-sm hover:bg-white shadow-lg rounded-xl border border-gray-200 transition-all duration-200"
         >
           <Settings className="h-4 w-4 text-gray-600" />

@@ -31,6 +31,7 @@ interface UploadedFile {
   progress: number;
   uploadedAt: Date;
   pages?: number;
+  analysisResult?: any; // Store financial analysis result for Excel files
 }
 
 export default function KnowledgeBase() {
@@ -91,7 +92,7 @@ export default function KnowledgeBase() {
     processFiles(selectedFiles);
   };
 
-  const processFiles = (fileList: File[]) => {
+  const processFiles = async (fileList: File[]) => {
     const newFiles: UploadedFile[] = fileList.map((file) => ({
       id: Math.random().toString(36).substr(2, 9),
       name: file.name,
@@ -105,27 +106,83 @@ export default function KnowledgeBase() {
 
     setFiles((prev) => [...prev, ...newFiles]);
 
-    // Simulate upload progress
-    newFiles.forEach((file) => {
-      const interval = setInterval(() => {
+    // Process each file
+    for (const file of fileList) {
+      const fileId = newFiles.find(f => f.name === file.name)?.id;
+      if (!fileId) continue;
+
+      try {
+        // Check if it's an Excel file for financial analysis
+        const isExcelFile = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+        
+        if (isExcelFile) {
+          // Upload to financial analysis backend
+          const formData = new FormData();
+          formData.append('file', file);
+
+          // Update progress to processing
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === fileId ? { ...f, status: "processing", progress: 50 } : f
+            )
+          );
+
+          const response = await fetch('/api/financial/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Mark as completed and store analysis result
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileId 
+                  ? { 
+                      ...f, 
+                      status: "completed", 
+                      progress: 100,
+                      analysisResult: result.report // Store the financial report
+                    } 
+                  : f
+              )
+            );
+          } else {
+            throw new Error(result.error || 'Failed to analyze file');
+          }
+        } else {
+          // For non-Excel files, simulate upload (as before)
+          const interval = setInterval(() => {
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileId && f.progress < 100
+                  ? { ...f, progress: f.progress + 20 }
+                  : f
+              )
+            );
+          }, 300);
+
+          setTimeout(() => {
+            clearInterval(interval);
+            setFiles((prev) =>
+              prev.map((f) =>
+                f.id === fileId ? { ...f, status: "completed", progress: 100 } : f
+              )
+            );
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('Error processing file:', error);
         setFiles((prev) =>
           prev.map((f) =>
-            f.id === file.id && f.progress < 100
-              ? { ...f, progress: f.progress + 20 }
+            f.id === fileId 
+              ? { ...f, status: "error", progress: 0 } 
               : f
           )
         );
-      }, 300);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === file.id ? { ...f, status: "completed", progress: 100 } : f
-          )
-        );
-      }, 1500);
-    });
+      }
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -227,7 +284,7 @@ export default function KnowledgeBase() {
                   Drop files here
                 </h3>
                 <p className="text-xs text-gray-500 mb-4">
-                  PDF, DOC, TXT, JSON up to 10MB
+                  Excel, PDF, DOC, TXT, JSON up to 10MB
                 </p>
 
                 <Button
@@ -242,7 +299,7 @@ export default function KnowledgeBase() {
                   id="file-input"
                   type="file"
                   multiple
-                  accept=".pdf,.txt,.doc,.docx,.json"
+                  accept=".xlsx,.xls,.pdf,.txt,.doc,.docx,.json"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -319,17 +376,53 @@ export default function KnowledgeBase() {
                       <div className="flex items-center gap-2">
                         {file.status === "completed" && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg p-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            {/* Show financial analysis button for Excel files */}
+                            {file.analysisResult && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  // Store the analysis result in localStorage and navigate to main page
+                                  localStorage.setItem('financialReport', JSON.stringify(file.analysisResult));
+                                  router.push('/');
+                                }}
+                                className="text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg p-2"
+                                title="View Financial Analysis"
+                              >
+                                📊
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg p-2"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
                               className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg p-2"
+                              onClick={() => {
+                                if (file.analysisResult) {
+                                  // Download Excel report for financial analysis
+                                  const reportId = file.analysisResult.reportId;
+                                  fetch(`/api/financial/export/${reportId}`, { method: 'POST' })
+                                    .then(response => response.blob())
+                                    .then(blob => {
+                                      const url = window.URL.createObjectURL(blob);
+                                      const link = document.createElement('a');
+                                      link.href = url;
+                                      link.download = `financial-analysis-${file.name}.xlsx`;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      link.remove();
+                                      window.URL.revokeObjectURL(url);
+                                    })
+                                    .catch(error => console.error('Download failed:', error));
+                                }
+                              }}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
