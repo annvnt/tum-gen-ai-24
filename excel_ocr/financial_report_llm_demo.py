@@ -15,7 +15,7 @@ print("API Key:", openai.api_key)
 
 client = OpenAI(api_key=openai.api_key)
 
-file_name = './demo_data.xlsx' #adjust to receive uploaded file
+file_name = 'demo_data.xlsx'  #adjust to receive uploaded file
 df = pd.read_excel(file_name, header=None)
 # df.head(10
 
