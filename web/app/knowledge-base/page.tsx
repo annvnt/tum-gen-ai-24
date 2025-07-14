@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import {
   Upload,
@@ -18,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 interface UploadedFile {
   id: string;
@@ -32,7 +34,7 @@ interface UploadedFile {
 }
 
 export default function KnowledgeBase() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<UploadedFile[]>([
     {
@@ -171,7 +173,7 @@ export default function KnowledgeBase() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => navigate("/")}
+                onClick={() => router.push("/")}
                 className="hover:bg-gray-100 rounded-xl"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
