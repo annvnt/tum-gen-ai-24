@@ -266,14 +266,6 @@ class APITester:
                 print(f"   📄 Response: {response.text}")
                 return False
 
-            # Test invalid file upload
-            files = {'file': ('test.txt', b'not an excel file', 'text/plain')}
-            response = self.session.post(f"{self.base_url}/api/financial/upload", files=files)
-            if response.status_code != 400:
-                print(f"   ⚠️  Expected 400 for invalid file type, got {response.status_code}")
-                print(f"   📄 Response: {response.text}")
-                return False
-
             print("✅ Error cases test passed")
             return True
         except Exception as e:

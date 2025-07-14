@@ -241,7 +241,7 @@ def main():
 
         # Load financial data - you can specify the file path here
         # For now, assuming demo_data.xlsx exists in the current directory
-        df = load_financial_data("demo_data.xlsx")
+        df = load_financial_data("input/demo_data.xlsx")
         print("Financial data loaded successfully")
         print(f"Data shape: {df.shape}")
 
