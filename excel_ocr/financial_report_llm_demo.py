@@ -1,48 +1,78 @@
-import openai
-from openai import OpenAI
+#!/usr/bin/env python3
+"""
+Financial Report LLM Demo - Python Script Version
+This script processes financial data from Excel files and uses OpenAI's GPT to generate
+professional financial reports with structured tables for Balance Sheet, Income Statement,
+and Cash Flow Statement.
+"""
+
 import os
-from dotenv import load_dotenv
 import re
 import pandas as pd
+import openai
+from openai import OpenAI
+from dotenv import load_dotenv
+from pathlib import Path
 
-# Load API Key from .env file
-load_dotenv()
+def setup_environment():
+    """Setup environment variables and OpenAI client"""
+    env_path = Path(__file__).parent.parent / ".env"
+    load_dotenv(dotenv_path=env_path)
 
-# Get API_KEY
-openai.api_key = os.getenv("API_KEY")
+    # Get API key from environment
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        raise ValueError("API_KEY not found in environment variables")
 
-print("API Key:", openai.api_key)
+    openai.api_key = api_key
+    print("API Key loaded successfully")
 
-client = OpenAI(api_key=openai.api_key)
+    # Initialize OpenAI client
+    client = OpenAI(api_key=api_key)
+    return client
 
-file_name = 'demo_data.xlsx'  #adjust to receive uploaded file
-df = pd.read_excel(file_name, header=None)
-# df.head(10
+def load_financial_data(file_path):
+    """Load financial data from Excel file and process it"""
+    # Read Excel file without headers
+    df = pd.read_excel(file_path, header=None)
 
-mask = df.apply(lambda row: row.astype(str).str.lower().str.contains("code").any(), axis=1)
-matches = df[mask]
+    # Find the row containing "code" to determine data start
+    mask = df.apply(lambda row: row.astype(str).str.lower().str.contains("code").any(), axis=1)
+    matches = df[mask]
 
-start_index = matches.index[0]
-df_from_code = df.iloc[start_index:].reset_index(drop=True)
+    if matches.empty:
+        raise ValueError("No 'code' column found in the data")
 
-# Set first row to header
-df_from_code.columns = df_from_code.iloc[0]
-df_from_code = df_from_code[1:].reset_index(drop=True)
+    # Extract data from the code row onwards
+    start_index = matches.index[0]
+    df_from_code = df.iloc[start_index:].reset_index(drop=True)
 
-indicator = pd.read_excel("full_financial_indicators.xlsx")
+    # Set first row as header
+    df_from_code.columns = df_from_code.iloc[0]
+    df_from_code = df_from_code[1:].reset_index(drop=True)
 
-balance_items = indicator['Balance Sheet'].dropna().tolist()
-balance_str = "\n".join(f"- {item}" for item in balance_items)
+    return df_from_code
 
-income_items = indicator['Income Statement'].dropna().tolist()
-income_str = "\n".join(f"- {item}" for item in income_items)
+def load_financial_indicators():
+    """Load financial indicators from the reference Excel file"""
+    indicator = pd.read_excel("full_financial_indicators.xlsx")
 
-cf_items = indicator['Cash Flow Statement'].dropna().tolist()
-cf_str = "\n".join(f"- {item}" for item in cf_items)
+    # Extract indicators for each financial statement
+    balance_items = indicator['Balance Sheet'].dropna().tolist()
+    balance_str = "\n".join(f"- {item}" for item in balance_items)
 
-## 4. Create prompt from input data
-def generate_prompt_from_df(df):
+    income_items = indicator['Income Statement'].dropna().tolist()
+    income_str = "\n".join(f"- {item}" for item in income_items)
+
+    cf_items = indicator['Cash Flow Statement'].dropna().tolist()
+    cf_str = "\n".join(f"- {item}" for item in cf_items)
+
+    return balance_str, income_str, cf_str
+
+def generate_prompt_from_df(df, balance_str, income_str, cf_str):
+    """Generate prompt for GPT based on financial data"""
     table_str = df.to_string(index=False)
+
     prompt = f"""
     You are a financial analyst. Below is a table of daily financial data, which contains two key columns representing financial figures for two years.
     The columns may have names such as "2023" and "2024", or "Last Year" and "Current Year", or similar variants.
@@ -91,75 +121,157 @@ def generate_prompt_from_df(df):
     """
     return prompt
 
-prompt = generate_prompt_from_df(df_from_code)
-# print(prompt)
+def generate_financial_report(client, df, balance_str, income_str, cf_str):
+    """Generate financial report using OpenAI GPT"""
+    prompt = generate_prompt_from_df(df, balance_str, income_str, cf_str)
 
-## 5. Call GPT to generate report
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {"role": "system", "content": "You are a financial analyst"},
-        {"role": "user", "content": prompt}
-    ]
-)
+    print("Generated prompt:")
+    print(prompt)
+    print("\n" + "="*50 + "\n")
 
-report_text = response.choices[0].message.content
-# print(report_text)
+    # Call GPT to generate report
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a financial analyst"},
+            {"role": "user", "content": prompt}
+        ]
+    )
 
-# 7. Extract data from output of prompt
+    report_text = response.choices[0].message.content
+    print("Generated Report:")
+    print(report_text)
 
-# report_text is output from GPT
-lines = report_text.splitlines()
+    return report_text
 
-tables = {}
-current_table_name = None
-table_lines = []
+def extract_simple_table(report_text):
+    """Extract simple table from GPT output"""
+    lines = report_text.splitlines()
+    table_lines = [l for l in lines if "|" in l and "---" not in l]
 
-def save_table(name, lines):
-    rows = [re.split(r"\s*\|\s*", l.strip().strip('|')) for l in lines]
+    # Remove leading/trailing | and split by |
+    rows = [re.split(r"\s*\|\s*", l.strip().strip('|')) for l in table_lines]
+
     if len(rows) > 1:
-        df = pd.DataFrame(rows[1:], columns=rows[0])
-        tables[name] = df
+        df_summary = pd.DataFrame(rows[1:], columns=rows[0])
 
-for line in lines:
-    # Identify line with format: #### Balance Sheet Table
-    match = re.match(r"^####\s+(.*?)\s+Table", line.strip())
-    if match:
-        # Save table
-        if current_table_name and table_lines:
-            save_table(current_table_name, table_lines)
-            table_lines = []
+        # Create output directory if it doesn't exist
+        os.makedirs("output", exist_ok=True)
 
-        # Update table name
-        current_table_name = match.group(1)
+        # Save to output directory
+        output_path = "output/financial_summary.xlsx"
+        df_summary.to_excel(output_path, index=False)
+        print(f"✅ Saved simple table to {output_path}")
+        return df_summary
+    else:
+        print("⚠️ No summary table found.")
+        return None
 
-    elif "|" in line and "---" not in line:
-        table_lines.append(line)
+def extract_structured_tables(report_text):
+    """Extract structured tables (Balance Sheet, Income Statement, Cash Flow) from GPT output"""
+    lines = report_text.splitlines()
 
-# Save final file
-if current_table_name and table_lines:
-    save_table(current_table_name, table_lines)
+    tables = {}
+    current_table_name = None
+    table_lines = []
 
-# Write to excel file with multiple sheets
-if tables:
-    with pd.ExcelWriter("financial_statements_from_gpt.xlsx", engine="xlsxwriter") as writer:
-        for sheet_name, df in tables.items():
-            df.to_excel(writer, sheet_name=sheet_name, index=False)
-    #files.download("financial_statements_from_gpt.xlsx") #modify this line to let file download
-    print("✅ Saved to financial_statements_from_gpt.xlsx")
-else:
-    print("⚠️ No tables found in report_text.")
+    def save_table(name, lines):
+        rows = [re.split(r"\s*\|\s*", l.strip().strip('|')) for l in lines]
+        if len(rows) > 1:
+            df = pd.DataFrame(rows[1:], columns=rows[0])
+            tables[name] = df
 
-#Random prompt to explain how GPT calculate terms in the sheet
-# prompt = f'How do you calculate Total Cost of Goods Sold from {df}'
-# response = client.chat.completions.create(
-#     model="gpt-4o",
-#     messages=[
-#         {"role": "system", "content": "You are a financial analyst"},
-#         {"role": "user", "content": prompt}
-#     ]
-# )
+    for line in lines:
+        # Match headings like: #### Balance Sheet Table
+        match = re.match(r"^####\s+(.*?)\s+Table", line.strip())
+        if match:
+            # Save previous table if exists
+            if current_table_name and table_lines:
+                save_table(current_table_name, table_lines)
+                table_lines = []
 
-# report_text = response.choices[0].message.content
-# print(report_text)
+            # Update current table name
+            current_table_name = match.group(1)
 
+        elif "|" in line and "---" not in line:
+            table_lines.append(line)
+
+    # Save last table if exists
+    if current_table_name and table_lines:
+        save_table(current_table_name, table_lines)
+
+    # Write to Excel with multiple sheets in output directory
+    if tables:
+        # Create output directory if it doesn't exist
+        os.makedirs("output", exist_ok=True)
+
+        # Save to output directory
+        output_path = "output/financial_statements_from_gpt.xlsx"
+        with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
+            for sheet_name, df in tables.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+        print(f"✅ Saved structured tables to {output_path}")
+        return tables
+    else:
+        print("⚠️ No tables found in report_text.")
+        return None
+
+def ask_calculation_question(client, df, question):
+    """Ask GPT about specific calculations"""
+    prompt = f'{question} from {df}'
+
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a financial analyst"},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    answer = response.choices[0].message.content
+    print(f"Question: {question}")
+    print(f"Answer: {answer}")
+    return answer
+
+def main():
+    """Main function to run the financial report generation process"""
+    try:
+        # Setup environment and client
+        client = setup_environment()
+
+        # Load financial data - you can specify the file path here
+        # For now, assuming demo_data.xlsx exists in the current directory
+        df = load_financial_data("demo_data.xlsx")
+        print("Financial data loaded successfully")
+        print(f"Data shape: {df.shape}")
+
+        # Load financial indicators
+        balance_str, income_str, cf_str = load_financial_indicators()
+        print("Financial indicators loaded successfully")
+
+        # Generate financial report
+        report_text = generate_financial_report(client, df, balance_str, income_str, cf_str)
+
+        # Extract tables from the report
+        print("\n" + "="*50)
+        print("Extracting tables from report...")
+
+        # Extract simple table
+        simple_table = extract_simple_table(report_text)
+
+        # Extract structured tables
+        structured_tables = extract_structured_tables(report_text)
+
+        # Example of asking a specific calculation question
+        print("\n" + "="*50)
+        print("Asking calculation question...")
+        ask_calculation_question(client, df, "How do you calculate Total Cost of Goods Sold")
+
+        print("\n✅ Financial report generation completed successfully!")
+
+    except Exception as e:
+        print(f"❌ Error occurred: {str(e)}")
+        raise
+
+if __name__ == "__main__":
+    main()
