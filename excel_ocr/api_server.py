@@ -31,6 +31,8 @@ from financial_report_llm_demo import (
     extract_simple_table,
     extract_structured_tables
 )
+# Import the financial agent
+from financial_agent import FinancialReportAgent
 
 # Custom JSON encoder for datetime objects
 class DateTimeEncoder(json.JSONEncoder):
@@ -43,6 +45,7 @@ class DateTimeEncoder(json.JSONEncoder):
 uploaded_files: Dict[str, Dict] = {}
 generated_reports: Dict[str, Dict] = {}
 openai_client = None
+financial_agent = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,10 +54,12 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events
     """
     # Startup
-    global openai_client
+    global openai_client, financial_agent
     try:
         openai_client = setup_environment()
+        financial_agent = FinancialReportAgent()
         print("✅ OpenAI client initialized successfully")
+        print("✅ Financial Agent initialized successfully")
     except Exception as e:
         print(f"❌ Failed to initialize OpenAI client: {str(e)}")
         raise
@@ -374,5 +379,80 @@ async def delete_uploaded_file(file_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# New agent endpoints
+class ChatMessage(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
+    timestamp: str
+
+@app.post("/api/agent/chat", response_model=ChatResponse)
+async def chat_with_agent(chat_message: ChatMessage):
+    """
+    Chat with the financial report agent
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        response = await financial_agent.process_message(chat_message.message)
+
+        return ChatResponse(
+            response=response,
+            timestamp=datetime.now().isoformat()
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
+
+@app.get("/api/agent/conversation")
+async def get_conversation_history():
+    """
+    Get the conversation history with the agent
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        return {
+            "conversation": financial_agent.get_conversation_history()
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving conversation: {str(e)}")
+
+@app.post("/api/agent/clear")
+async def clear_conversation():
+    """
+    Clear the conversation history
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        financial_agent.clear_conversation()
+
+        return {"message": "Conversation history cleared"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing conversation: {str(e)}")
+
+@app.get("/api/agent/files")
+async def list_agent_files():
+    """
+    List available files for the agent
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        financial_agent.scan_available_files()
+
+        return {
+            "files": financial_agent.available_files,
+            "count": len(financial_agent.available_files)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
