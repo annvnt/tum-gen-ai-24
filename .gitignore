@@ -9,6 +9,11 @@ web/lerna-debug.log*
 
 # Dependency directories
 web/node_modules
+node_modules/
+
+# Next.js build artifacts
+web/.next/
+web/out/
 
 # Build outputs
 web/dist
@@ -16,6 +21,11 @@ web/dist-ssr
 
 # Local env files
 web/*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Editor directories and files
 web/.vscode/*
@@ -27,6 +37,9 @@ web/*.ntvs*
 web/*.njsproj
 web/*.sln
 web/*.sw?
+.DS_Store
+.vscode/
+.idea/
 
 # Python
 __pycache__/
@@ -48,28 +61,69 @@ env.bak/
 venv.bak/
 .venv/
 
-# Environment variables
-.env
-.env.local
-.env.*.local
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+financial_reports.db
 
-# Vector database venv directory (but allow other vdb files)
-vdb/venv/
+# Upload directories and temporary files
+excel_ocr/uploads/
+uploads/
+temp/
+tmp/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Output files that are generated
+excel_ocr/output/*.xlsx
+web/output/*.xlsx
 
-# macOS
+# Docker volumes and data
+data/
+
+# OS generated files
 .DS_Store
-.AppleDouble
-.LSOverride
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# IDE files
 *.swp
 *.swo
 *~
 
-# Logs
-*.log
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Test files
+test_*.py
+*_test.py
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Webpack and build artifacts
+*.pack.gz
+*.hot-update.js
+*.hot-update.json
+
+# Next.js specific
+.next/
+next-env.d.ts

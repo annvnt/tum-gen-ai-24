@@ -137,16 +137,19 @@ async def upload_excel_file(file: UploadFile = File(...)):
         # Generate unique file ID
         file_id = str(uuid.uuid4())
 
-        # Create temporary file path
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, f"{file_id}_{file.filename}")
+        # Create persistent upload directory
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+
+        # Create persistent file path
+        file_path = upload_dir / f"{file_id}_{file.filename}"
 
         # Save uploaded file
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         # Store file information in the database
-        db_manager.store_uploaded_file(file_id, file.filename, file_path)
+        db_manager.store_uploaded_file(file_id, file.filename, str(file_path))
 
         return UploadResponse(
             file_id=file_id,

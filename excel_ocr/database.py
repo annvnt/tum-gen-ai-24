@@ -12,9 +12,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.sqlite import JSON as SQLiteJSON
 import uuid
+from pathlib import Path
 
 # Database configuration
-DATABASE_URL = "sqlite:///./financial_reports.db"
+DATABASE_URL = "sqlite:///./data/financial_reports.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -73,7 +74,13 @@ class DatabaseManager:
     def __init__(self):
         self.engine = engine
         self.SessionLocal = SessionLocal
+        self.ensure_data_directory()
         self.create_tables()
+
+    def ensure_data_directory(self):
+        """Ensure the data directory exists"""
+        data_dir = Path("data")
+        data_dir.mkdir(exist_ok=True)
 
     def create_tables(self):
         """Create all database tables"""
