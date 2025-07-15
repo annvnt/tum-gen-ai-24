@@ -58,14 +58,14 @@ check_directories() {
 # Function to build the Docker image
 build() {
     print_status "Building Docker image..."
-    docker-compose build
+    docker compose build
     print_status "Docker image built successfully"
 }
 
 # Function to start the container
 start() {
     print_status "Starting Financial Report API container..."
-    docker-compose up -d
+    docker compose up -d
     print_status "Container started successfully"
     print_status "API is available at: http://localhost:8000"
     print_status "API documentation at: http://localhost:8000/docs"
@@ -74,7 +74,7 @@ start() {
 # Function to stop the container
 stop() {
     print_status "Stopping Financial Report API container..."
-    docker-compose down
+    docker compose down
     print_status "Container stopped successfully"
 }
 
@@ -93,7 +93,7 @@ logs() {
 # Function to check status
 status() {
     print_status "Checking container status..."
-    docker-compose ps
+    docker compose ps
 }
 
 # Function to run tests
@@ -110,7 +110,7 @@ test() {
 # Function to clean up
 clean() {
     print_status "Cleaning up Docker resources..."
-    docker-compose down --volumes --remove-orphans
+    docker compose down --volumes --remove-orphans
     docker system prune -f
     print_status "Cleanup completed"
 }
