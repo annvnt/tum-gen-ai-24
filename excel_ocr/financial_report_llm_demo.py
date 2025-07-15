@@ -14,6 +14,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 def setup_environment():
     """Setup environment variables and OpenAI client"""
     env_path = Path(__file__).parent.parent / ".env"
@@ -55,7 +57,8 @@ def load_financial_data(file_path):
 
 def load_financial_indicators():
     """Load financial indicators from the reference Excel file"""
-    indicator = pd.read_excel("full_financial_indicators.xlsx")
+    indicator_path = SCRIPT_DIR / "full_financial_indicators.xlsx"
+    indicator = pd.read_excel(indicator_path)
 
     # Extract indicators for each financial statement
     balance_items = indicator['Balance Sheet'].dropna().tolist()
@@ -156,10 +159,11 @@ def extract_simple_table(report_text):
         df_summary = pd.DataFrame(rows[1:], columns=rows[0])
 
         # Create output directory if it doesn't exist
-        os.makedirs("output", exist_ok=True)
+        output_dir = SCRIPT_DIR / "output"
+        os.makedirs(output_dir, exist_ok=True)
 
         # Save to output directory
-        output_path = "output/financial_summary.xlsx"
+        output_path = output_dir / "financial_summary.xlsx"
         df_summary.to_excel(output_path, index=False)
         print(f"✅ Saved simple table to {output_path}")
         return df_summary
@@ -203,10 +207,11 @@ def extract_structured_tables(report_text):
     # Write to Excel with multiple sheets in output directory
     if tables:
         # Create output directory if it doesn't exist
-        os.makedirs("output", exist_ok=True)
+        output_dir = SCRIPT_DIR / "output"
+        os.makedirs(output_dir, exist_ok=True)
 
         # Save to output directory
-        output_path = "output/financial_statements_from_gpt.xlsx"
+        output_path = output_dir / "financial_statements_from_gpt.xlsx"
         with pd.ExcelWriter(output_path, engine="xlsxwriter") as writer:
             for sheet_name, df in tables.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -241,7 +246,8 @@ def main():
 
         # Load financial data - you can specify the file path here
         # For now, assuming demo_data.xlsx exists in the current directory
-        df = load_financial_data("input/demo_data.xlsx")
+        input_file = SCRIPT_DIR / "input/demo_data.xlsx"
+        df = load_financial_data(input_file)
         print("Financial data loaded successfully")
         print(f"Data shape: {df.shape}")
 

@@ -1,46 +1,3 @@
-# Logs
-web/logs
-web/*.log
-web/npm-debug.log*
-web/yarn-debug.log*
-web/yarn-error.log*
-web/pnpm-debug.log*
-web/lerna-debug.log*
-
-# Dependency directories
-web/node_modules
-node_modules/
-
-# Next.js build artifacts
-web/.next/
-web/out/
-
-# Build outputs
-web/dist
-web/dist-ssr
-
-# Local env files
-web/*.local
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Editor directories and files
-web/.vscode/*
-!web/.vscode/extensions.json
-web/.idea
-web/.DS_Store
-web/*.suo
-web/*.ntvs*
-web/*.njsproj
-web/*.sln
-web/*.sw?
-.DS_Store
-.vscode/
-.idea/
-
 # Python
 __pycache__/
 *.py[cod]
@@ -77,28 +34,6 @@ tmp/
 excel_ocr/output/*.xlsx
 web/output/*.xlsx
 
-# Docker volumes and data
-data/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# IDE files
-*.swp
-*.swo
-*~
-
-# Backup files
-*.bak
-*.backup
-*.orig
-
 # Test files
 test_*.py
 *_test.py
@@ -119,11 +54,69 @@ coverage.xml
 profile_default/
 ipython_config.py
 
-# Webpack and build artifacts
-*.pack.gz
-*.hot-update.js
-*.hot-update.json
+# Frontend (Next.js in web/)
+# Dependency directories
+web/node_modules/
 
-# Next.js specific
-.next/
-next-env.d.ts
+# Next.js build artifacts
+web/.next/
+web/out/
+
+# Generated TypeScript declarations
+web/next-env.d.ts
+
+# Other build outputs
+web/dist
+web/dist-ssr
+
+# Lockfiles for other package managers
+web/package-lock.json
+web/yarn.lock
+
+# Logs
+web/logs/
+web/*.log
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+web/pnpm-debug.log*
+web/lerna-debug.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+web/*.local
+
+# Docker
+data/
+
+# General
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+*.bak
+*.backup
+*.orig
+web/.idea
+web/.vscode/*
+!web/.vscode/extensions.json
+web/.DS_Store
