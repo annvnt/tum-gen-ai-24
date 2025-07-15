@@ -34,6 +34,9 @@ from financial_report_llm_demo import (
 # Import the financial agent
 from financial_agent import FinancialReportAgent
 
+# Import database manager
+from database import db_manager
+
 # Custom JSON encoder for datetime objects
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -41,9 +44,7 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
-# Global variables for storage (in production, use a proper database)
-uploaded_files: Dict[str, Dict] = {}
-generated_reports: Dict[str, Dict] = {}
+# Global variables
 openai_client = None
 financial_agent = None
 
@@ -60,8 +61,9 @@ async def lifespan(app: FastAPI):
         financial_agent = FinancialReportAgent()
         print("✅ OpenAI client initialized successfully")
         print("✅ Financial Agent initialized successfully")
+        print("✅ Database initialized successfully")
     except Exception as e:
-        print(f"❌ Failed to initialize OpenAI client: {str(e)}")
+        print(f"❌ Failed to initialize services: {str(e)}")
         raise
 
     yield
@@ -143,13 +145,8 @@ async def upload_excel_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Store file information
-        uploaded_files[file_id] = {
-            "filename": file.filename,
-            "file_path": file_path,
-            "uploaded_at": datetime.now(),
-            "status": "uploaded"
-        }
+        # Store file information in the database
+        db_manager.store_uploaded_file(file_id, file.filename, file_path)
 
         return UploadResponse(
             file_id=file_id,
@@ -193,13 +190,14 @@ async def analyze_financial_data(request: AnalysisRequest, background_tasks: Bac
     """
     try:
         # Validate file exists
-        if request.file_id not in uploaded_files:
+        file_info = db_manager.get_uploaded_file(request.file_id)
+        if not file_info:
             raise HTTPException(status_code=404, detail="File not found")
 
-        file_info = uploaded_files[request.file_id]
+        file_path = file_info["file_path"]
 
         # Load financial data
-        df = load_financial_data(file_info["file_path"])
+        df = load_financial_data(file_path)
 
         # Load financial indicators
         balance_str, income_str, cf_str = load_financial_indicators()
@@ -222,16 +220,8 @@ async def analyze_financial_data(request: AnalysisRequest, background_tasks: Bac
             for table_name, table_df in structured_tables.items():
                 tables_data[table_name.lower().replace(" ", "_")] = table_df.to_dict(orient="records")
 
-        # Store generated report
-        generated_reports[report_id] = {
-            "report_id": report_id,
-            "file_id": request.file_id,
-            "generated_at": datetime.now(),
-            "summary": report_text,
-            "tables": tables_data,
-            "status": "completed",
-            "custom_params": request.custom_params
-        }
+        # Store generated report in the database
+        db_manager.store_generated_report(report_id, request.file_id, report_text, tables_data, request.custom_params)
 
         return AnalysisResponse(
             report_id=report_id,
@@ -253,10 +243,9 @@ async def get_financial_report(report_id: str):
     Get a previously generated financial report
     """
     try:
-        if report_id not in generated_reports:
+        report_data = db_manager.get_generated_report_dict(report_id)
+        if not report_data:
             raise HTTPException(status_code=404, detail="Report not found")
-
-        report_data = generated_reports[report_id]
 
         # Ensure datetime is properly serialized
         generated_at = report_data["generated_at"]
@@ -284,10 +273,9 @@ async def export_report_to_excel(report_id: str):
     Returns a downloadable Excel file
     """
     try:
-        if report_id not in generated_reports:
+        report_data = db_manager.get_generated_report_dict(report_id)
+        if not report_data:
             raise HTTPException(status_code=404, detail="Report not found")
-
-        report_data = generated_reports[report_id]
 
         # Create temporary Excel file
         temp_dir = tempfile.gettempdir()
@@ -321,18 +309,7 @@ async def export_report_to_excel(report_id: str):
 async def list_uploaded_files():
     """List all uploaded files"""
     try:
-        files_list = []
-        for file_id, info in uploaded_files.items():
-            uploaded_at = info["uploaded_at"]
-            if isinstance(uploaded_at, datetime):
-                uploaded_at = uploaded_at.isoformat()
-
-            files_list.append({
-                "file_id": file_id,
-                "filename": info["filename"],
-                "uploaded_at": uploaded_at,
-                "status": info["status"]
-            })
+        files_list = db_manager.list_uploaded_files()
 
         return {"files": files_list}
     except Exception as e:
@@ -342,18 +319,7 @@ async def list_uploaded_files():
 async def list_generated_reports():
     """List all generated reports"""
     try:
-        reports_list = []
-        for report_id, info in generated_reports.items():
-            generated_at = info["generated_at"]
-            if isinstance(generated_at, datetime):
-                generated_at = generated_at.isoformat()
-
-            reports_list.append({
-                "report_id": report_id,
-                "file_id": info["file_id"],
-                "generated_at": generated_at,
-                "status": info["status"]
-            })
+        reports_list = db_manager.list_generated_reports()
 
         return {"reports": reports_list}
     except Exception as e:
@@ -362,78 +328,180 @@ async def list_generated_reports():
 @app.delete("/api/financial/file/{file_id}")
 async def delete_uploaded_file(file_id: str):
     """Delete an uploaded file"""
-    if file_id not in uploaded_files:
+    if not db_manager.get_uploaded_file(file_id):
         raise HTTPException(status_code=404, detail="File not found")
 
     try:
-        file_info = uploaded_files[file_id]
-        # Remove file from disk
-        if os.path.exists(file_info["file_path"]):
-            os.remove(file_info["file_path"])
+        file_info = db_manager.get_uploaded_file(file_id)
+        file_path = file_info["file_path"]
 
-        # Remove from memory
-        del uploaded_files[file_id]
+        # Remove file from disk
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        # Remove from database
+        db_manager.delete_uploaded_file(file_id)
 
         return {"message": "File deleted successfully", "file_id": file_id}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
 
-# New agent endpoints
+# Enhanced agent endpoints with database integration
 class ChatMessage(BaseModel):
     message: str
+    session_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
     timestamp: str
+    session_id: str
+    context_documents: Optional[List[str]] = None
+
+class DocumentAnalysisRequest(BaseModel):
+    file_id: str
 
 @app.post("/api/agent/chat", response_model=ChatResponse)
 async def chat_with_agent(chat_message: ChatMessage):
     """
-    Chat with the financial report agent
+    Chat with the financial report agent with persistent conversation history
     """
     try:
         if not financial_agent:
             raise HTTPException(status_code=500, detail="Agent not initialized")
 
+        # Set session ID if provided
+        if chat_message.session_id:
+            financial_agent.current_session_id = chat_message.session_id
+
         response = await financial_agent.process_message(chat_message.message)
+
+        # Get context documents used in this response
+        context_docs = financial_agent.get_document_context(chat_message.message)
 
         return ChatResponse(
             response=response,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
+            session_id=financial_agent.current_session_id,
+            context_documents=context_docs
         )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing message: {str(e)}")
 
-@app.get("/api/agent/conversation")
-async def get_conversation_history():
+@app.get("/api/agent/conversation/{session_id}")
+async def get_conversation_history(session_id: str):
     """
-    Get the conversation history with the agent
+    Get the conversation history for a specific session from database
     """
     try:
         if not financial_agent:
             raise HTTPException(status_code=500, detail="Agent not initialized")
 
+        history = financial_agent.get_database_chat_history(session_id)
+
         return {
-            "conversation": financial_agent.get_conversation_history()
+            "session_id": session_id,
+            "conversation": history,
+            "message_count": len(history)
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving conversation: {str(e)}")
 
-@app.post("/api/agent/clear")
-async def clear_conversation():
+@app.get("/api/agent/conversation")
+async def get_current_conversation_history():
     """
-    Clear the conversation history
+    Get the conversation history for the current session
     """
     try:
         if not financial_agent:
             raise HTTPException(status_code=500, detail="Agent not initialized")
 
+        # Get both in-memory and database history
+        memory_history = financial_agent.get_conversation_history()
+        db_history = financial_agent.get_database_chat_history()
+
+        return {
+            "session_id": financial_agent.current_session_id,
+            "memory_conversation": memory_history,
+            "database_conversation": db_history,
+            "message_count": len(db_history)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving conversation: {str(e)}")
+
+@app.post("/api/agent/analyze-document")
+async def analyze_document_with_agent(request: DocumentAnalysisRequest):
+    """
+    Analyze a specific document using the financial agent
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        result = await financial_agent.analyze_document(request.file_id)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing document: {str(e)}")
+
+@app.get("/api/agent/documents")
+async def get_available_documents():
+    """
+    Get list of available documents for analysis
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        return financial_agent.get_available_documents()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
+
+@app.post("/api/agent/clear/{session_id}")
+async def clear_conversation_session(session_id: str):
+    """
+    Clear the conversation history for a specific session
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        # Clear from current agent if it's the same session
+        if financial_agent.current_session_id == session_id:
+            financial_agent.clear_conversation()
+
+        return {"message": f"Conversation history cleared for session {session_id}"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing conversation: {str(e)}")
+
+@app.post("/api/agent/clear")
+async def clear_conversation():
+    """
+    Clear the conversation history for current session
+    """
+    try:
+        if not financial_agent:
+            raise HTTPException(status_code=500, detail="Agent not initialized")
+
+        old_session = financial_agent.current_session_id
         financial_agent.clear_conversation()
 
-        return {"message": "Conversation history cleared"}
+        return {
+            "message": "Conversation history cleared",
+            "old_session_id": old_session,
+            "new_session_id": financial_agent.current_session_id
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error clearing conversation: {str(e)}")
@@ -451,9 +519,99 @@ async def list_agent_files():
 
         return {
             "files": financial_agent.available_files,
-            "count": len(financial_agent.available_files)
+            "session_id": financial_agent.current_session_id
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
 
+# Database management endpoints
+@app.get("/api/database/stats")
+async def get_database_stats():
+    """
+    Get statistics about the database contents
+    """
+    try:
+        uploaded_files = db_manager.get_all_uploaded_documents()
+        generated_reports = db_manager.get_all_generated_reports()
+
+        # Get chat statistics
+        with db_manager.get_session() as session:
+            from database import ChatHistory
+            total_chats = session.query(ChatHistory).count()
+            unique_sessions = session.query(ChatHistory.session_id).distinct().count()
+
+        return {
+            "uploaded_documents": len(uploaded_files),
+            "generated_reports": len(generated_reports),
+            "total_chat_messages": total_chats,
+            "unique_chat_sessions": unique_sessions,
+            "recent_uploads": [
+                {
+                    "filename": doc.original_filename,
+                    "uploaded_at": doc.uploaded_at.isoformat(),
+                    "file_size": doc.file_size
+                }
+                for doc in uploaded_files[:5]
+            ]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting database stats: {str(e)}")
+
+@app.get("/api/database/search")
+async def search_documents(filename: str = None):
+    """
+    Search for documents by filename
+    """
+    try:
+        if filename:
+            documents = db_manager.search_documents_by_filename(filename)
+        else:
+            documents = db_manager.get_all_uploaded_documents()
+
+        return {
+            "documents": [
+                {
+                    "file_id": doc.id,
+                    "filename": doc.original_filename,
+                    "uploaded_at": doc.uploaded_at.isoformat(),
+                    "status": doc.status,
+                    "file_size": doc.file_size
+                }
+                for doc in documents
+            ],
+            "count": len(documents)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching documents: {str(e)}")
+
+# Add server info endpoint
+@app.get("/api/server/info")
+async def get_server_info():
+    """
+    Get server information and status
+    """
+    return {
+        "service": "Financial Report API",
+        "version": "1.0.0",
+        "database": "SQLite",
+        "database_file": "financial_reports.db",
+        "features": [
+            "Document upload and storage",
+            "Financial report generation",
+            "Persistent chat history",
+            "Document analysis",
+            "Report export"
+        ],
+        "endpoints": {
+            "upload": "/api/financial/upload",
+            "chat": "/api/agent/chat",
+            "analyze": "/api/financial/analyze",
+            "export": "/api/financial/export/{report_id}"
+        }
+    }
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
