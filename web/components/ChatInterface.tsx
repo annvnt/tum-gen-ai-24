@@ -23,29 +23,56 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<
     Array<{ type: "user" | "bot"; content: string; timestamp: Date }>
   >([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
-    if (!message.trim()) return;
+  const handleSend = async () => {
+    if (!message.trim() || isLoading) return;
 
-    const newMessage = {
+    const userMessage = {
       type: "user" as const,
       content: message,
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMessage]);
+    const currentMessage = message;
     setMessage("");
+    setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call the chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: currentMessage }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
       const botResponse = {
         type: "bot" as const,
-        content:
-          "I'm your AI accounting assistant. I can help you with financial calculations, tax questions, bookkeeping guidance, and more. What would you like to know?",
+        content: data.response,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorResponse = {
+        type: "bot" as const,
+        content: "Sorry, I encountered an error while processing your message. Please try again.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -128,7 +155,8 @@ export function ChatInterface() {
                 {message.trim() && (
                   <Button
                     onClick={handleSend}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 bg-teal-600 hover:bg-teal-700 rounded-xl shadow-lg transition-all duration-200"
+                    disabled={isLoading}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 rounded-xl shadow-lg transition-all duration-200"
                   >
                     <Send className="h-4 w-4 text-white" />
                   </Button>
@@ -216,6 +244,20 @@ export function ChatInterface() {
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[75%] p-6 rounded-3xl shadow-lg bg-white text-gray-800 border border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    </div>
+                    <span className="text-sm text-gray-500">AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -236,7 +278,7 @@ export function ChatInterface() {
               </div>
               <Button
                 onClick={handleSend}
-                disabled={!message.trim()}
+                disabled={!message.trim() || isLoading}
                 className="h-14 w-14 p-0 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 rounded-2xl shadow-lg transition-all duration-200"
               >
                 <Send className="h-5 w-5 text-white" />
