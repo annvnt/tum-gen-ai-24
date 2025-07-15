@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  financial-report-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: financial-report-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./excel_ocr/input:/app/excel_ocr/input
+      - ./excel_ocr/output:/app/excel_ocr/output
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
