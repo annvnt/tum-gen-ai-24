@@ -172,10 +172,40 @@ Please provide helpful, accurate financial analysis and be specific about which 
                 # Add basic file info
                 context_parts.append(f"Document: {doc_info['filename']} (ID: {doc_id})")
 
+                try:
+                    # Load and analyze the actual file content
+                    file_path = doc_info['file_path']
+                    if os.path.exists(file_path):
+                        # Load the Excel file data
+                        df = load_financial_data(file_path)
+
+                        # Add data summary to context
+                        context_parts.append(f"  - File contains {len(df)} rows and {len(df.columns)} columns")
+                        context_parts.append(f"  - Columns: {', '.join(df.columns.tolist())}")
+
+                        # Add sample data (first few rows)
+                        sample_data = df.head(5).to_string()
+                        context_parts.append(f"  - Sample data:\n{sample_data}")
+
+                        # Add basic statistics
+                        numeric_columns = df.select_dtypes(include=['number']).columns
+                        if len(numeric_columns) > 0:
+                            context_parts.append(f"  - Numeric columns: {', '.join(numeric_columns)}")
+
+                            # Add summary statistics for key columns
+                            stats_summary = df[numeric_columns].describe().to_string()
+                            context_parts.append(f"  - Statistical summary:\n{stats_summary}")
+
+                    else:
+                        context_parts.append(f"  - Warning: File path not found: {file_path}")
+
+                except Exception as e:
+                    context_parts.append(f"  - Error loading file data: {str(e)}")
+
                 # Try to get extracted data if available
                 doc_record = db_manager.get_uploaded_document(doc_id)
                 if doc_record and doc_record.extracted_data:
-                    context_parts.append(f"  - Data preview: {str(doc_record.extracted_data)[:200]}...")
+                    context_parts.append(f"  - Extracted data preview: {str(doc_record.extracted_data)[:200]}...")
 
                 # Get related reports
                 reports = db_manager.get_reports_for_document(doc_id)
