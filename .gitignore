@@ -89,6 +89,9 @@ data/
 ehthumbs.db
 Thumbs.db
 
+# Google Cloud credentials
+gcs-credentials.json
+
 # IDE files
 *.swp
 *.swo
