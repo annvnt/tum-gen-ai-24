@@ -9,6 +9,7 @@ import os
 import uuid
 import tempfile
 import shutil
+import io
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from pathlib import Path
@@ -137,19 +138,25 @@ async def upload_excel_file(file: UploadFile = File(...)):
         # Generate unique file ID
         file_id = str(uuid.uuid4())
 
-        # Create persistent upload directory
-        upload_dir = Path("uploads")
-        upload_dir.mkdir(exist_ok=True)
-
-        # Create persistent file path
-        file_path = upload_dir / f"{file_id}_{file.filename}"
-
-        # Save uploaded file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # Store file information in the database
-        db_manager.store_uploaded_file(file_id, file.filename, str(file_path))
+        # Import GCS client
+        from gcs_client import get_gcs_client
+        
+        # Upload file to Google Cloud Storage
+        gcs_client = get_gcs_client()
+        
+        # Create GCS blob name
+        blob_name = f"uploads/{file_id}_{file.filename}"
+        
+        # Read file content and upload to GCS
+        file_content = await file.read()
+        file_url = gcs_client.upload_file(
+            io.BytesIO(file_content), 
+            blob_name, 
+            content_type=file.content_type or "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        
+        # Store file information in the database with GCS URL
+        db_manager.store_uploaded_file(file_id, file.filename, file_url)
 
         return UploadResponse(
             file_id=file_id,
@@ -197,10 +204,34 @@ async def analyze_financial_data(request: AnalysisRequest, background_tasks: Bac
         if not file_info:
             raise HTTPException(status_code=404, detail="File not found")
 
-        file_path = file_info["file_path"]
-
-        # Load financial data
-        df = load_financial_data(file_path)
+        file_url = file_info["file_path"]
+        
+        # Download file from GCS to temporary location for processing
+        from gcs_client import get_gcs_client
+        gcs_client = get_gcs_client()
+        
+        # Extract blob name from URL
+        blob_name = file_url.split('/')[-1]
+        if 'uploads/' not in file_url:
+            blob_name = f"uploads/{blob_name}"
+        else:
+            # Extract the path after the bucket name
+            blob_name = file_url.split('.com/')[-1]
+        
+        file_content = gcs_client.download_file(blob_name)
+        
+        # Save to temporary file for processing
+        temp_file = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+        temp_file.write(file_content)
+        temp_file.close()
+        
+        try:
+            # Load financial data from temporary file
+            df = load_financial_data(temp_file.name)
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
 
         # Load financial indicators
         balance_str, income_str, cf_str = load_financial_indicators()
@@ -336,11 +367,20 @@ async def delete_uploaded_file(file_id: str):
 
     try:
         file_info = db_manager.get_uploaded_file(file_id)
-        file_path = file_info["file_path"]
-
-        # Remove file from disk
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        file_url = file_info["file_path"]
+        
+        # Remove file from GCS
+        from gcs_client import get_gcs_client
+        gcs_client = get_gcs_client()
+        
+        # Extract blob name from URL
+        blob_name = file_url.split('.com/')[-1]
+        
+        try:
+            gcs_client.delete_file(blob_name)
+        except Exception as e:
+            # Log the error but continue with database deletion
+            print(f"Warning: Could not delete file from GCS: {str(e)}")
 
         # Remove from database
         db_manager.delete_uploaded_file(file_id)

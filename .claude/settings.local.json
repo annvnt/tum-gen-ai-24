@@ -4,7 +4,11 @@
       "Bash(docker compose:*)",
       "Bash(./docker-run.sh build:*)",
       "Bash(find:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(rm:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

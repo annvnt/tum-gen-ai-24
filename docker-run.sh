@@ -55,17 +55,10 @@ check_directories() {
     print_status "Directory structure verified"
 }
 
-# Function to build the Docker image
-build() {
-    print_status "Building Docker image..."
-    docker compose build
-    print_status "Docker image built successfully"
-}
-
 # Function to start the container
 start() {
-    print_status "Starting Financial Report API container..."
-    docker compose up -d
+    print_status "Building and starting Financial Report API container..."
+    docker compose up --build -d
     print_status "Container started successfully"
     print_status "API is available at: http://localhost:8000"
     print_status "API documentation at: http://localhost:8000/docs"
@@ -116,12 +109,7 @@ clean() {
 }
 
 # Main script logic
-case "${1:-}" in
-    build)
-        check_env
-        check_directories
-        build
-        ;;
+case "${1:-start}" in
     start)
         check_env
         check_directories
@@ -149,11 +137,10 @@ case "${1:-}" in
         ;;
     *)
         echo "Financial Report API Docker Management"
-        echo "Usage: $0 {build|start|stop|restart|logs|status|test|clean}"
+        echo "Usage: $0 {start|stop|restart|logs|status|test|clean}"
         echo ""
         echo "Commands:"
-        echo "  build   - Build the Docker image"
-        echo "  start   - Start the container"
+        echo "  start   - Build and start the container"
         echo "  stop    - Stop the container"
         echo "  restart - Restart the container"
         echo "  logs    - View container logs"
@@ -161,7 +148,7 @@ case "${1:-}" in
         echo "  test    - Run API tests"
         echo "  clean   - Clean up Docker resources"
         echo ""
-        echo "Example: $0 build && $0 start"
+        echo "Example: $0 start"
         exit 1
         ;;
 esac
