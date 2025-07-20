@@ -104,7 +104,7 @@ export default function KnowledgeBase() {
       pages: Math.floor(Math.random() * 50) + 1,
     }));
 
-    setFiles((prev) => [...prev, ...newFiles]);
+    setFiles((prev) => [...newFiles, ...prev]);// add new files on top
 
     // Process each file
     for (const file of fileList) {
@@ -327,7 +327,7 @@ export default function KnowledgeBase() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 {filteredFiles.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="p-4 bg-gray-100 rounded-xl w-16 h-16 mx-auto mb-4">
@@ -440,7 +440,7 @@ export default function KnowledgeBase() {
                     </div>
                   ))
                 )}
-              </div>
+              </div> */}
             </Card>
           </div>
         </div>
