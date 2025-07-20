@@ -20,7 +20,7 @@ import {
   Trash2,
   Eye,
   Download,
-  SendHorizonal,
+  SendHorizontal,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -401,7 +401,7 @@ export function ChatInterface() {
                           variant="ghost"
                           className="absolute top-1/2 right-3 -translate-y-1/2"
                         >
-                          <SendHorizonal size={24} strokeWidth={2} />
+                          <SendHorizontal size={24} strokeWidth={2} />
                         </Button>
                       </div>
 
@@ -483,7 +483,7 @@ export function ChatInterface() {
                             variant="ghost"
                             className="absolute top-1/2 right-3 -translate-y-1/2"
                           >
-                            <SendHorizonal size={24} />
+                            <SendHorizontal size={24} />
                           </Button>
                         </div>
                       </div>
