@@ -120,6 +120,10 @@ def generate_prompt_from_df(df, balance_str, income_str, cf_str):
       - A concise, professional financial summary report in English
       - Three clearly formatted Excel-style tables with numeric data for both years side-by-side, ready for export
 
+    8. Your only task is to generate professional and structured financial reports based on structured input data.
+      - Do not include creative writing, metaphors, poetry, jokes, or anything unrelated to finance.
+      - If the user asks for non-financial content, politely reject the request.
+
     Use professional English.
     """
     return prompt
