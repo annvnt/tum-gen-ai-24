@@ -6,6 +6,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    instrumentationHook: false,
+  },
 }
 
 module.exports = nextConfig

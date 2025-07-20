@@ -2,29 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Send,
-  Paperclip,
-  Search,
-  Mic,
   FileText,
-  Calendar,
   BarChart3,
   Calculator,
   Settings,
-  Upload,
-  Database,
-  ArrowLeft,
   Cloud,
   Check,
-  X,
   Trash2,
-  Eye,
-  Download,
   SendHorizontal,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +41,7 @@ export function ChatInterface() {
   // File upload state
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm] = useState("");
   
   // Chat state
   const [message, setMessage] = useState("");
@@ -88,7 +76,7 @@ export function ChatInterface() {
 
   const processFiles = (fileList: File[]) => {
     const newFiles: UploadedFile[] = fileList.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36).substring(2, 11),
       name: file.name,
       size: file.size,
       type: file.type,
@@ -159,8 +147,6 @@ export function ChatInterface() {
     file.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const completedFiles = files.filter((f) => f.status === "completed");
-  const totalSize = completedFiles.reduce((sum, f) => sum + f.size, 0);
 
   // Chat handlers
   const handleSend = async () => {
@@ -284,7 +270,7 @@ export function ChatInterface() {
                     <div className="flex flex-row gap-8 justify-items-start text-center w-full">
                       {/* File upload */}
                       <div
-                        className={`border-2 border-dashed border-muted p-8 flex flex-col items-center justify-center text-center gap-4 h-full max-w-7xl min-h-80 cursor-pointer pb-8 bg-muted/20 hover:bg-muted/60 hover:border-ring transition-colors transition-all duration-500 w-full ${
+                        className={`border-2 border-dashed border-muted p-8 flex flex-col items-center justify-center text-center gap-4 h-full max-w-7xl min-h-80 cursor-pointer pb-8 bg-muted/20 hover:bg-muted/60 hover:border-ring transition-all duration-500 w-full ${
                           isDragging ? "bg-primary/5 border-ring" : ""
                         }`}
                         onDragOver={handleDragOver}
