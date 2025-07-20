@@ -1,4 +1,4 @@
-// File: /Users/mohannedkandil/web/tum/genai/tum-gen-ai-24/web/app/page.tsx
+// File: C:\Users\moham\Desktop\tum-gen-ai-24\web\app\page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

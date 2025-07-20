@@ -327,7 +327,7 @@ export default function KnowledgeBase() {
                 </div>
               </div>
 
-              {/* <div className="space-y-3">
+              <div className="space-y-3">
                 {filteredFiles.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="p-4 bg-gray-100 rounded-xl w-16 h-16 mx-auto mb-4">
@@ -440,7 +440,7 @@ export default function KnowledgeBase() {
                     </div>
                   ))
                 )}
-              </div> */}
+              </div>
             </Card>
           </div>
         </div>
