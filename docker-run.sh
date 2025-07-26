@@ -27,8 +27,11 @@ print_error() {
 check_env() {
     if [ ! -f ".env" ]; then
         print_error ".env file not found!"
-        print_warning "Please create a .env file with your API_KEY:"
-        echo "API_KEY=your_openai_api_key_here"
+        print_warning "Please create a .env file with your API keys:"
+        echo "OPENAI_API_KEY=your_openai_api_key_here"
+        echo "JINA_API_KEY=your_jina_api_key_here"
+        echo "GCS_BUCKET_NAME=your_gcs_bucket_name"
+        echo "GCS_CREDENTIALS_FILE=path_to_service_account.json"
         exit 1
     fi
     print_status ".env file found"
@@ -36,21 +39,21 @@ check_env() {
 
 # Function to check if required directories exist
 check_directories() {
-    if [ ! -d "excel_ocr/input" ]; then
-        print_warning "excel_ocr/input directory not found, creating it..."
-        mkdir -p excel_ocr/input
-    fi
-
-    if [ ! -d "excel_ocr/output" ]; then
-        print_warning "excel_ocr/output directory not found, creating it..."
-        mkdir -p excel_ocr/output
-    fi
-
-    if [ ! -f "excel_ocr/api_server.py" ]; then
-        print_error "excel_ocr/api_server.py not found!"
+    if [ ! -d "src" ]; then
+        print_error "src directory not found!"
         print_error "Please run this script from the project root directory"
         exit 1
     fi
+
+    if [ ! -f "src/financial_analysis/api/app.py" ]; then
+        print_error "src/financial_analysis/api/app.py not found!"
+        print_error "Please run this script from the project root directory"
+        exit 1
+    fi
+
+    # Create directories for uploads and data if they don't exist
+    mkdir -p uploads
+    mkdir -p data
 
     print_status "Directory structure verified"
 }
@@ -92,11 +95,10 @@ status() {
 # Function to run tests
 test() {
     print_status "Running API tests..."
-    if [ -f "excel_ocr/test_api.py" ]; then
-        cd excel_ocr && python test_api.py
+    if [ -f "src/test_vector_processing.py" ]; then
+        cd src && python test_vector_processing.py
     else
-        print_error "excel_ocr/test_api.py not found"
-        exit 1
+        print_warning "No test files found, skipping tests"
     fi
 }
 

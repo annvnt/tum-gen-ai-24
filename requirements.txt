@@ -2,25 +2,31 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
+pydantic>=2.0.0
 
 # OpenAI and environment
 openai>=1.0.0
 python-dotenv>=0.19.0
 
 # Data processing
-pandas>=1.5.0
-openpyxl>=3.0.0
+pandas>=2.0.0
+openpyxl>=3.1.0
 xlsxwriter>=3.0.0
-
-# Additional dependencies
-pydantic>=2.0.0
 
 # Database
 sqlalchemy>=2.0.0
-alembic>=1.10.0
+alembic>=1.11.0
 
 # Google Cloud Storage
 google-cloud-storage>=2.10.0
+google-api-python-client>=2.100.0
 google-auth>=2.17.0
 google-auth-oauthlib>=1.0.0
 google-auth-httplib2>=0.1.0
+
+# Vector processing
+qdrant-client>=1.6.0
+jina>=3.20.0
+
+# Utilities
+python-dateutil>=2.8.0
