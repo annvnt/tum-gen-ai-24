@@ -20,9 +20,9 @@ def setup_environment():
     load_dotenv(dotenv_path=env_path)
 
     # Get API key from environment
-    api_key = os.getenv("API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
     if not api_key:
-        raise ValueError("API_KEY not found in environment variables")
+        raise ValueError("OPENAI_API_KEY or API_KEY not found in environment variables")
 
     openai.api_key = api_key
     print("API Key loaded successfully")
