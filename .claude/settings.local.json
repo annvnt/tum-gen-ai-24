@@ -8,7 +8,10 @@
       "Bash(rm:*)",
       "Bash(git rm:*)",
       "Bash(git reset:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(git clean:*)"
     ],
     "deny": []
   }
