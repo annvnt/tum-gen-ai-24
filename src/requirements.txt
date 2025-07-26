@@ -1,27 +1,43 @@
-# Core dependencies
-pandas>=2.0.0
-openpyxl>=3.1.0
-fastapi>=0.100.0
-uvicorn>=0.23.0
-pydantic>=2.0.0
-python-multipart>=0.0.6
+# Core Data Processing
+pandas>=2.0.0,<3.0.0
+openpyxl>=3.1.0,<4.0.0
+xlsxwriter>=3.1.0,<4.0.0
+numpy>=1.24.0,<2.0.0
+
+# Web Framework & API
+fastapi>=0.100.0,<1.0.0
+uvicorn[standard]>=0.23.0,<1.0.0
+python-multipart>=0.0.6,<1.0.0
+pydantic>=2.0.0,<3.0.0
 
 # Database
-sqlalchemy>=2.0.0
-alembic>=1.11.0
+sqlalchemy>=2.0.0,<3.0.0
+alembic>=1.11.0,<2.0.0
 
 # Google Cloud Storage
-google-cloud-storage>=2.10.0
-google-api-python-client>=2.100.0
+google-cloud-storage>=2.10.0,<3.0.0
+google-api-python-client>=2.100.0,<3.0.0
+google-auth>=2.20.0,<3.0.0
+google-auth-oauthlib>=1.0.0,<2.0.0
+google-auth-httplib2>=0.1.0,<1.0.0
 
-# AI/ML
-openai>=1.0.0
-requests>=2.31.0
+# AI/ML APIs
+openai>=1.0.0,<2.0.0
+requests>=2.31.0,<3.0.0
 
-# Vector processing
-qdrant-client>=1.6.0
-jina>=3.20.0
+# Vector Database
+qdrant-client>=1.6.0,<2.0.0
 
 # Utilities
-python-dotenv>=1.0.0
-python-dateutil>=2.8.0
+python-dotenv>=1.0.0,<2.0.0
+python-dateutil>=2.8.0,<3.0.0
+
+# Async Support
+aiofiles>=23.0.0,<24.0.0
+
+# Development & Testing (optional but recommended)
+pytest>=7.0.0,<8.0.0
+pytest-asyncio>=0.21.0,<1.0.0
+black>=23.0.0,<24.0.0
+flake8>=6.0.0,<7.0.0
+mypy>=1.0.0,<2.0.0
