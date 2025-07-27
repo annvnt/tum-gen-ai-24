@@ -391,7 +391,6 @@ async def delete_uploaded_file(file_id: str):
 class ChatMessage(BaseModel):
     message: str
     session_id: Optional[str] = None
-    file_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -442,11 +441,7 @@ async def chat_with_agent(chat_message: ChatMessage):
         if chat_message.session_id:
             financial_agent.current_session_id = chat_message.session_id
 
-        file_ids = [chat_message.file_id] if chat_message.file_id else None
-        response = await financial_agent.process_message(
-            chat_message.message,
-            file_ids=file_ids
-        )
+        response = await financial_agent.process_message(chat_message.message)
 
         # Get context documents used in this response
         context_docs = financial_agent.get_document_context(chat_message.message)
