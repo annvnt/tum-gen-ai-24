@@ -11,7 +11,16 @@
       "Bash(git checkout:*)",
       "Bash(mv:*)",
       "Bash(ls:*)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(docker exec:*)",
+      "Bash(git restore:*)",
+      "Bash(chmod:*)",
+      "Bash(./verify_gitignore.sh:*)",
+      "Bash(./verify_webpack_ignore.sh:*)",
+      "Bash(true)",
+      "Bash(git clean:*)",
+      "Bash(pip install:*)"
     ],
     "deny": []
   }

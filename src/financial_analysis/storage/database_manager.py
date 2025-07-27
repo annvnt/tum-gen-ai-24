@@ -245,11 +245,21 @@ class DatabaseManager:
 
     # Search and query operations
     def search_documents_by_filename(self, filename_pattern: str) -> List[UploadedDocument]:
-        """Search documents by filename pattern"""
+        """Search documents by filename pattern with SQL injection prevention"""
+        from ..security.sql_sanitizer import SQLSanitizer
+        
+        # Sanitize search pattern
+        sanitized_pattern = SQLSanitizer.sanitize_like_pattern(filename_pattern)
+        if not sanitized_pattern:
+            return []
+        
         with self.get_session() as session:
-            return session.query(UploadedDocument).filter(
-                UploadedDocument.original_filename.like(f"%{filename_pattern}%")
-            ).all()
+            # Use parameterized query instead of string concatenation
+            query, params = SQLSanitizer.build_safe_like_query(
+                "original_filename", sanitized_pattern
+            )
+            
+            return session.query(UploadedDocument).filter(query).params(**params).all()
 
     def get_documents_with_extracted_data(self) -> List[UploadedDocument]:
         """Get all documents that have extracted data"""

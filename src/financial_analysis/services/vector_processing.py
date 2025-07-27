@@ -101,12 +101,11 @@ class VectorProcessingService:
     async def _load_excel_from_gcs(self, gcs_url: str) -> pd.DataFrame:
         """Download and load Excel file from GCS"""
         try:
-            # Extract blob name from GCS URL (simple extraction for local dev)
-            if '.com/' in gcs_url:
-                blob_name = gcs_url.split('.com/')[-1]
-            else:
-                # Fallback for simple blob names
-                blob_name = gcs_url.split('/')[-1]
+            # Import path utilities for consistent URL handling
+            from ..storage.gcs_path_utils import GCSPathManager
+            
+            # Extract clean blob name using centralized path utilities
+            blob_name = GCSPathManager.extract_blob_name_from_url(gcs_url)
             
             # Download file content
             file_content = self.gcs_client.download_file(blob_name)

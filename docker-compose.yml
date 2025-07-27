@@ -14,4 +14,31 @@ services:
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - QDRANT_HOST=qdrant
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: financial-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8000
+      - NEXT_PUBLIC_MAX_FILE_SIZE=52428800
+    depends_on:
+      - financial-report-api
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
     restart: unless-stopped

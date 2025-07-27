@@ -6,6 +6,7 @@ pydantic==2.5.0
 
 # OpenAI integration
 openai==1.35.3
+httpx==0.25.2
 
 # Data processing (pinned compatible versions)
 pandas==2.0.3
@@ -30,3 +31,11 @@ requests==2.31.0
 # Environment and utilities
 python-dotenv==1.0.0
 python-dateutil==2.8.2
+
+# Authentication & Security
+PyJWT==2.8.0
+cryptography==41.0.7
+bcrypt==4.1.2
+
+# FastEmbed for embeddings
+fastembed==0.2.0

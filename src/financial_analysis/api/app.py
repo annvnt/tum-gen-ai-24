@@ -147,21 +147,25 @@ async def upload_excel_file(file: UploadFile = File(...)):
         # Generate unique file ID
         file_id = str(uuid.uuid4())
 
-        # Import GCS client
+        # Import GCS client and path utilities
         from ..storage.gcs_client import get_gcs_client
+        from ..storage.gcs_path_utils import GCSPathManager
         
         # Upload file to Google Cloud Storage
         gcs_client = get_gcs_client()
         
-        # Create GCS blob name
-        blob_name = f"uploads/{file_id}_{file.filename}"
+        # Create standardized GCS blob name using path utilities
+        blob_name = GCSPathManager.get_upload_blob_name(file.filename, file_id)
         
         # Upload file content to GCS
-        file_url = gcs_client.upload_file(
+        gcs_client.upload_file(
             io.BytesIO(file_content), 
             blob_name, 
             content_type=file.content_type or "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+        
+        # Store only the relative blob name (not full URL) for consistent access
+        file_url = blob_name
         
         # Store file information in the database with GCS URL
         db_manager.store_uploaded_file(file_id, file.filename, file_url)
@@ -216,15 +220,11 @@ async def analyze_financial_data(request: AnalysisRequest, background_tasks: Bac
         
         # Download file from GCS to temporary location for processing
         from ..storage.gcs_client import get_gcs_client
+        from ..storage.gcs_path_utils import GCSPathManager
         gcs_client = get_gcs_client()
         
-        # Extract blob name from URL
-        blob_name = file_url.split('/')[-1]
-        if 'uploads/' not in file_url:
-            blob_name = f"uploads/{blob_name}"
-        else:
-            # Extract the path after the bucket name
-            blob_name = file_url.split('.com/')[-1]
+        # Extract clean blob name using centralized path utilities
+        blob_name = GCSPathManager.extract_blob_name_from_url(file_url)
         
         file_content = gcs_client.download_file(blob_name)
         
@@ -379,10 +379,11 @@ async def delete_uploaded_file(file_id: str):
         
         # Remove file from GCS
         from ..storage.gcs_client import get_gcs_client
+        from ..storage.gcs_path_utils import GCSPathManager
         gcs_client = get_gcs_client()
         
-        # Extract blob name from URL
-        blob_name = file_url.split('.com/')[-1]
+        # Extract clean blob name using centralized path utilities
+        blob_name = GCSPathManager.extract_blob_name_from_url(file_url)
         
         try:
             gcs_client.delete_file(blob_name)
@@ -721,6 +722,178 @@ async def get_vector_processing_stats():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting statistics: {str(e)}")
+
+# Enhanced Chat Endpoints
+from ..services.enhanced_chat_agent import EnhancedChatAgent
+from ..services.chat_file_manager import ChatFileManager
+from ..services.pdf_generator import FinancialPDFGenerator
+
+# Initialize enhanced services
+enhanced_chat_agent = EnhancedChatAgent()
+chat_file_manager = ChatFileManager()
+pdf_generator = FinancialPDFGenerator()
+
+class EnhancedChatMessage(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+
+class EnhancedChatResponse(BaseModel):
+    response: str
+    session_id: str
+    status: str
+    report_id: Optional[str] = None
+    download_url: Optional[str] = None
+    files_included: Optional[List[str]] = None
+    analysis_results: Optional[List[Dict[str, Any]]] = None
+    search_results: Optional[List[Dict[str, Any]]] = None
+
+class FileSearchRequest(BaseModel):
+    query: str
+    search_type: str = "semantic"  # "semantic" or "filename"
+    limit: int = 10
+    filters: Optional[Dict[str, Any]] = None
+
+class FileContextRequest(BaseModel):
+    file_id: str
+
+class ReportGenerationRequest(BaseModel):
+    file_ids: List[str]
+    template: str = "comprehensive"
+    custom_config: Optional[Dict[str, Any]] = None
+
+class SessionRequest(BaseModel):
+    session_id: str
+
+@app.post("/api/enhanced/chat", response_model=EnhancedChatResponse)
+async def enhanced_chat_endpoint(request: EnhancedChatMessage):
+    """
+    Enhanced chat endpoint with file context and knowledge base integration
+    """
+    try:
+        response = await enhanced_chat_agent.process_message(
+            message=request.message,
+            session_id=request.session_id or str(uuid.uuid4()),
+            context=request.context
+        )
+        return EnhancedChatResponse(**response)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in enhanced chat: {str(e)}")
+
+@app.get("/api/enhanced/chat/session/{session_id}")
+async def get_chat_session_summary(session_id: str):
+    """
+    Get summary of chat session activity
+    """
+    try:
+        return await enhanced_chat_agent.get_session_summary(session_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting session summary: {str(e)}")
+
+@app.delete("/api/enhanced/chat/session/{session_id}")
+async def clear_chat_session(session_id: str):
+    """
+    Clear chat session history
+    """
+    try:
+        return await enhanced_chat_agent.clear_session(session_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error clearing session: {str(e)}")
+
+@app.post("/api/enhanced/files/search")
+async def search_files_endpoint(request: FileSearchRequest):
+    """
+    Search files using semantic or filename-based search
+    """
+    try:
+        results = chat_file_manager.search_files(
+            query=request.query,
+            search_type=request.search_type,
+            limit=request.limit,
+            filters=request.filters
+        )
+        return {"results": results, "query": request.query, "total": len(results)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching files: {str(e)}")
+
+@app.get("/api/enhanced/files/available")
+async def get_available_files(limit: int = 20, file_type: Optional[str] = None):
+    """
+    Get all available files with enhanced metadata
+    """
+    try:
+        files = chat_file_manager.get_available_files(
+            limit=limit,
+            file_type=file_type
+        )
+        return {"files": files, "total": len(files)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting files: {str(e)}")
+
+@app.get("/api/enhanced/files/{file_id}/context")
+async def get_file_context(file_id: str):
+    """
+    Get comprehensive file context for chat analysis
+    """
+    try:
+        context = chat_file_manager.get_file_context(file_id)
+        if not context:
+            raise HTTPException(status_code=404, detail="File not found")
+        return context
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting file context: {str(e)}")
+
+@app.post("/api/enhanced/files/auto-select")
+async def auto_select_files(request: Dict[str, Any]):
+    """
+    Auto-select relevant files based on context
+    """
+    try:
+        selected = chat_file_manager.auto_select_files(
+            context=request.get('context', ''),
+            max_files=request.get('max_files', 5),
+            criteria=request.get('criteria', {})
+        )
+        return {"selected_files": selected, "context": request.get('context', '')}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error auto-selecting files: {str(e)}")
+
+@app.post("/api/enhanced/reports/generate")
+async def generate_enhanced_report(request: ReportGenerationRequest, background_tasks: BackgroundTasks):
+    """
+    Generate enhanced PDF report from selected files
+    """
+    try:
+        report_id = str(uuid.uuid4())
+        
+        # Start report generation in background
+        background_tasks.add_task(
+            pdf_generator.generate_custom_report,
+            report_config={
+                'template': request.template,
+                **request.custom_config
+            },
+            file_ids=request.file_ids
+        )
+        
+        return {
+            "report_id": report_id,
+            "status": "generating",
+            "message": "Report generation started"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error starting report generation: {str(e)}")
+
+@app.get("/api/enhanced/reports/templates")
+async def get_report_templates():
+    """
+    Get available report templates
+    """
+    try:
+        templates = pdf_generator.get_report_template_options()
+        return {"templates": templates}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting templates: {str(e)}")
 
 # Database management endpoints
 @app.get("/api/database/stats")

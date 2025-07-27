@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
 
-from .vector_database import QrantManager
+from .vector_database import QdrantManager
 from .document_storage import GCSMetadataManager
 
 

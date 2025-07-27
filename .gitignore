@@ -122,14 +122,44 @@ coverage.xml
 profile_default/
 ipython_config.py
 
-# Webpack and build artifacts
+# Webpack cache and build artifacts
+# Webpack cache files
+*.pack
 *.pack.gz
+*.pack.*.gz
+**/*.pack
+**/*.pack.gz
+**/*.pack.*.gz
+**/cache/webpack/**/*
+**/webpack/**/*
+
+# Hot module replacement files
 *.hot-update.js
 *.hot-update.json
+*.hot-update.*.js
+*.hot-update.*.json
+**/*.hot-update.*
+**/*hot-update*
 
 # Next.js specific
 .next/
 web/.next/
-.next/**/*
-web/.next/**/*
+.next/**
+web/.next/**
+.next/**/
+web/.next/**
 next-env.d.ts
+
+# Additional webpack build artifacts
+build/
+dist/
+dist-ssr/
+.output/
+.vercel/
+*.tsbuildinfo
+
+# Ensure all webpack cache is ignored
+web/.next/
+web/.next/**/*
+**/.next/
+**/.next/**/*

@@ -60,11 +60,13 @@ check_directories() {
 
 # Function to start the container
 start() {
-    print_status "Building and starting Financial Report API container..."
+    print_status "Building and starting Financial Report platform..."
     docker compose up --build -d
-    print_status "Container started successfully"
-    print_status "API is available at: http://localhost:8000"
-    print_status "API documentation at: http://localhost:8000/docs"
+    print_status "Platform started successfully"
+    print_status "Backend API: http://localhost:8000"
+    print_status "Frontend: http://localhost:3000"
+    print_status "API documentation: http://localhost:8000/docs"
+    print_status "Knowledge base chat: http://localhost:3000/chat"
 }
 
 # Function to stop the container

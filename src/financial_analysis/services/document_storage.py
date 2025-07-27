@@ -17,7 +17,7 @@ class GCSMetadataManager:
     
     def __init__(self, 
                  bucket_name: str = None,
-                 credentials_path: str = "gcs-credentials.json"):
+                 credentials_path: str = None):
         """
         Initialize GCS metadata manager
         
@@ -28,9 +28,9 @@ class GCSMetadataManager:
         self.gcs_client = GCSClient(credentials_path=credentials_path, bucket_name=bucket_name)
         self.bucket_name = self.gcs_client.bucket_name
         
-        # Define GCS paths
-        self.documents_prefix = "documents/"
-        self.metadata_prefix = "metadata/"
+        # Import path utilities for consistent path handling
+        from ..storage.gcs_path_utils import GCSPathManager
+        self.path_manager = GCSPathManager
     
     def store_document(self, 
                       document_data: Dict[str, Any], 
@@ -63,14 +63,8 @@ class GCSMetadataManager:
         
         # Store document
         try:
-            doc_blob_name = f"{self.documents_prefix}{doc_id}.json"
+            doc_blob_name = self.path_manager.get_document_blob_name(f"{doc_id}.json", doc_id)
             doc_content = json.dumps(full_document, indent=2, ensure_ascii=False)
-            
-            doc_url = self.gcs_client.upload_file_from_path(
-                file_path=None,  # We'll use file content instead
-                destination_blob_name=doc_blob_name,
-                content_type="application/json"
-            )
             
             # Upload file content directly
             from io import BytesIO
@@ -83,7 +77,7 @@ class GCSMetadataManager:
             
             # Store separate metadata file
             if metadata:
-                metadata_blob_name = f"{self.metadata_prefix}{doc_id}_meta.json"
+                metadata_blob_name = self.path_manager.get_metadata_blob_name(doc_id)
                 metadata_content = json.dumps({
                     "doc_id": doc_id,
                     "document_url": doc_url,
@@ -116,7 +110,7 @@ class GCSMetadataManager:
             Document data or None if not found
         """
         try:
-            doc_blob_name = f"{self.documents_prefix}{doc_id}.json"
+            doc_blob_name = self.path_manager.get_document_blob_name(f"{doc_id}.json", doc_id)
             
             # Download document content
             file_content = self.gcs_client.download_file(doc_blob_name)
@@ -143,7 +137,7 @@ class GCSMetadataManager:
             Metadata dictionary or None if not found
         """
         try:
-            metadata_blob_name = f"{self.metadata_prefix}{doc_id}_meta.json"
+            metadata_blob_name = self.path_manager.get_metadata_blob_name(doc_id)
             
             file_content = self.gcs_client.download_file(metadata_blob_name)
             metadata = json.loads(file_content.decode('utf-8'))
@@ -170,7 +164,7 @@ class GCSMetadataManager:
         """
         try:
             # List all documents in the documents prefix
-            blobs = self.gcs_client.bucket.list_blobs(prefix=self.documents_prefix)
+            blobs = self.gcs_client.bucket.list_blobs(prefix=self.path_manager.DOCUMENT_PREFIX)
             
             documents = []
             for blob in blobs:
@@ -203,8 +197,8 @@ class GCSMetadataManager:
             True if deleted successfully, False if not found
         """
         try:
-            doc_blob_name = f"{self.documents_prefix}{doc_id}.json"
-            metadata_blob_name = f"{self.metadata_prefix}{doc_id}_meta.json"
+            doc_blob_name = self.path_manager.get_document_blob_name(f"{doc_id}.json", doc_id)
+            metadata_blob_name = self.path_manager.get_metadata_blob_name(doc_id)
             
             # Delete document
             self.gcs_client.delete_file(doc_blob_name)
@@ -237,8 +231,7 @@ class GCSMetadataManager:
             True if document exists, False otherwise
         """
         try:
-            doc_blob_name = f"{self.documents_prefix}{doc_id}.json"
-            from google.cloud import storage
+            doc_blob_name = self.path_manager.get_document_blob_name(f"{doc_id}.json", doc_id)
             
             blob = self.gcs_client.bucket.blob(doc_blob_name)
             return blob.exists()

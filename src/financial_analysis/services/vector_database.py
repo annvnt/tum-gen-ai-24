@@ -17,10 +17,13 @@ class QdrantManager:
     """Manages vector operations with Qdrant database"""
     
     def __init__(self, 
-                 host: str = "localhost", 
+                 host: str = None, 
                  port: int = 6333,
                  collection_name: str = "documents",
                  vector_size: int = 1024):
+        # Use environment variable for host, fallback to localhost
+        if host is None:
+            host = os.getenv("QDRANT_HOST", "localhost")
         """
         Initialize Qdrant client
         

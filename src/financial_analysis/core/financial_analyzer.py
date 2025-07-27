@@ -16,8 +16,8 @@ from pathlib import Path
 
 def setup_environment():
     """Setup environment variables and OpenAI client"""
-    env_path = Path(__file__).parent.parent.parent / ".env"
-    load_dotenv(dotenv_path=env_path)
+    # Load from .env file - works both in Docker and locally
+    load_dotenv()
 
     # Get API key from environment
     api_key = os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
@@ -56,7 +56,7 @@ def load_financial_data(file_path):
 def load_financial_indicators():
     """Load financial indicators from the reference Excel file"""
     # Load indicators from project root
-    indicator_path = Path(__file__).parent.parent.parent / "full_financial_indicators.xlsx"
+    indicator_path = Path(__file__).parent.parent / "data" / "full_financial_indicators.xlsx"
     indicator = pd.read_excel(indicator_path)
 
     # Extract indicators for each financial statement
