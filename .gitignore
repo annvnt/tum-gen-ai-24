@@ -79,6 +79,7 @@ web/output/*.xlsx
 
 # Docker volumes and data
 data/
+!src/financial_analysis/data/full_financial_indicators.xlsx
 
 # OS generated files
 .DS_Store

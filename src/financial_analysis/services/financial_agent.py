@@ -129,7 +129,7 @@ Please provide helpful, accurate financial analysis and be specific about which 
             ]
 
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=messages,
                 max_tokens=2000,
                 temperature=0.7
@@ -289,7 +289,7 @@ Please provide helpful, accurate financial analysis and be specific about which 
                 report_type="agent_analysis",
                 summary=report_text,
                 tables=analysis_result["tables"],
-                model_used="gpt-4"
+                model_used="gpt-4o"
             )
 
             return analysis_result
