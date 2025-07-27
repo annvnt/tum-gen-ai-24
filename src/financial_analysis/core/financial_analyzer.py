@@ -55,8 +55,23 @@ def load_financial_data(file_path):
 
 def load_financial_indicators():
     """Load financial indicators from the reference Excel file"""
-    # Load indicators from project root
-    indicator_path = Path(__file__).parent.parent / "data" / "full_financial_indicators.xlsx"
+    # Load indicators from multiple possible locations
+    possible_paths = [
+        Path(__file__).parent.parent / "data" / "full_financial_indicators.xlsx",
+        Path(__file__).parent / "data" / "full_financial_indicators.xlsx",
+        Path.cwd() / "src" / "financial_analysis" / "data" / "full_financial_indicators.xlsx",
+        Path("/app/src/financial_analysis/data/full_financial_indicators.xlsx"),  # Docker path
+    ]
+    
+    indicator_path = None
+    for path in possible_paths:
+        if path.exists():
+            indicator_path = path
+            break
+    
+    if not indicator_path:
+        raise FileNotFoundError(f"Could not find full_financial_indicators.xlsx in any expected location")
+    
     indicator = pd.read_excel(indicator_path)
 
     # Extract indicators for each financial statement

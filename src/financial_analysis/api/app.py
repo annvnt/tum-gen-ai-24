@@ -319,28 +319,16 @@ async def export_report_to_excel(report_id: str):
         if not report_data:
             raise HTTPException(status_code=404, detail="Report not found")
 
-        # Create temporary Excel file
-        temp_dir = tempfile.gettempdir()
-        excel_file = os.path.join(temp_dir, f"financial_report_{report_id}.xlsx")
-
-        # Create Excel file with multiple sheets
-        with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
-            # Write summary sheet
-            if "summary" in report_data["tables"]:
-                summary_df = pd.DataFrame(report_data["tables"]["summary"])
-                summary_df.to_excel(writer, sheet_name="Summary", index=False)
-
-            # Write structured tables
-            for table_name, table_data in report_data["tables"].items():
-                if table_name != "summary":
-                    table_df = pd.DataFrame(table_data)
-                    sheet_name = table_name.replace("_", " ").title()[:31]  # Excel sheet name limit
-                    table_df.to_excel(writer, sheet_name=sheet_name, index=False)
-
+        # Use enhanced Excel formatter
+        from ..services.excel_formatter import ExcelFormatter
+        formatter = ExcelFormatter()
+        
+        excel_file = formatter.create_enhanced_excel(report_data, f"report_{report_id}")
+        
         return FileResponse(
             excel_file,
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename=f"financial_report_{report_id}.xlsx"
+            filename=f"enhanced_financial_report_{report_id}.xlsx"
         )
 
     except Exception as e:
@@ -403,6 +391,7 @@ async def delete_uploaded_file(file_id: str):
 class ChatMessage(BaseModel):
     message: str
     session_id: Optional[str] = None
+    file_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -453,7 +442,11 @@ async def chat_with_agent(chat_message: ChatMessage):
         if chat_message.session_id:
             financial_agent.current_session_id = chat_message.session_id
 
-        response = await financial_agent.process_message(chat_message.message)
+        file_ids = [chat_message.file_id] if chat_message.file_id else None
+        response = await financial_agent.process_message(
+            chat_message.message,
+            file_ids=file_ids
+        )
 
         # Get context documents used in this response
         context_docs = financial_agent.get_document_context(chat_message.message)
@@ -866,14 +859,26 @@ async def generate_enhanced_report(request: ReportGenerationRequest, background_
     try:
         report_id = str(uuid.uuid4())
         
-        # Start report generation in background
+        # Use simple PDF generator for MVP
+        from ..services.simple_pdf_generator import SimplePDFGenerator
+        from ..core.financial_analyzer import FinancialAnalyzer
+        
+        simple_generator = SimplePDFGenerator()
+        analyzer = FinancialAnalyzer()
+        
+        # Get file info and generate analysis
+        file_info = db_manager.get_uploaded_file(request.file_ids[0])
+        if not file_info:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Generate analysis data directly
+        analysis_data = analyzer._parse_excel_file(file_info['file_path'])
+        
+        # Generate PDF directly
         background_tasks.add_task(
-            pdf_generator.generate_custom_report,
-            report_config={
-                'template': request.template,
-                **request.custom_config
-            },
-            file_ids=request.file_ids
+            simple_generator.generate_simple_pdf,
+            file_id=request.file_ids[0],
+            analysis_data=analysis_data or {'summary': 'Financial analysis report'}
         )
         
         return {

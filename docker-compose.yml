@@ -16,6 +16,8 @@ services:
       - PYTHONUNBUFFERED=1
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=${QDRANT_PORT:-6333}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcs-credentials.json
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-tum-gen-ai-24-uploads}
     depends_on:
       - qdrant
     restart: unless-stopped
@@ -26,27 +28,6 @@ services:
       retries: 5
       start_period: 40s
 
-  frontend:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    container_name: financial-frontend
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:${API_PORT:-8000}
-      - NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:${API_PORT:-8000}
-      - NEXT_PUBLIC_MAX_FILE_SIZE=52428850
-      - PORT=${FRONTEND_PORT:-3000}
-    depends_on:
-      - financial-report-api
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
 
   qdrant:
     image: qdrant/qdrant:latest

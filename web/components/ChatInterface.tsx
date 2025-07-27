@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Send,
   Paperclip,
@@ -11,67 +11,140 @@ import {
   BarChart3,
   Calculator,
   Settings,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+// Adjusted Message type
+interface Message {
+    type: "user" | "bot";
+    content: string;
+    timestamp: Date;
+    file?: { name: string };
+}
 
 export function ChatInterface() {
   const router = useRouter();
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<
-    Array<{ type: "user" | "bot"; content: string; timestamp: Date }>
-  >([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = async () => {
-    if (!message.trim() || isLoading) return;
+    const userMessageText = message;
+    const userFile = file;
 
-    const userMessage = {
-      type: "user" as const,
-      content: message,
-      timestamp: new Date(),
-    };
+    if (!userMessageText.trim() && !userFile) return;
 
-    setMessages((prev) => [...prev, userMessage]);
-    const currentMessage = message;
-    setMessage("");
     setIsLoading(true);
 
-    try {
-      // Call the chat API
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: currentMessage }),
-      });
+    // Add user message to UI immediately
+    const userMessageUI: Message = {
+      type: "user",
+      content: userMessageText,
+      timestamp: new Date(),
+      file: userFile ? { name: userFile.name } : undefined,
+    };
+    setMessages((prev) => [...prev, userMessageUI]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    // Reset input fields
+    setMessage("");
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    try {
+      let botResponseContent = "";
+
+      // If there's a file, upload and analyze it first.
+      if (userFile) {
+        const formData = new FormData();
+        formData.append("file", userFile);
+
+        // Use the financial upload endpoint
+        const uploadResponse = await fetch("/api/financial/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || "File analysis failed");
+        }
+
+        const result = await uploadResponse.json();
+        if (result.success && result.report) {
+          toast.success(`File "${userFile.name}" analyzed successfully.`);
+          botResponseContent = result.report.summary; // Use the summary as the bot's response
+        } else {
+          throw new Error(result.error || "Analysis did not return a report.");
+        }
       }
 
-      const data = await response.json();
+      // If there was also a text message, send it to the chat agent for a follow-up response.
+      if (userMessageText.trim()) {
+        const chatResponse = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMessageText }),
+        });
 
-      const botResponse = {
-        type: "bot" as const,
-        content: data.response,
+        if (!chatResponse.ok) {
+          throw new Error("Chat API request failed.");
+        }
+
+        const chatData = await chatResponse.json();
+        
+        // Combine the analysis summary with the chat response.
+        if (botResponseContent) {
+          botResponseContent += `\n\n**Regarding your message:**\n${chatData.response}`;
+        } else {
+          botResponseContent = chatData.response;
+        }
+      }
+
+      if (!botResponseContent) {
+        // This case should not happen if the function is exited at the start
+        // but as a fallback.
+        botResponseContent = "I'm not sure how to respond to that. Please try again.";
+      }
+
+      const botMessage: Message = {
+        type: "bot",
+        content: botResponseContent,
         timestamp: new Date(),
       };
+      setMessages((prev) => [...prev, botMessage]);
 
-      setMessages((prev) => [...prev, botResponse]);
     } catch (error) {
-      console.error('Chat error:', error);
-      const errorResponse = {
-        type: "bot" as const,
-        content: "Sorry, I encountered an error while processing your message. Please try again.",
+      const errorMessage: Message = {
+        type: "bot",
+        content: `An error occurred: ${(error as Error).message}`,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorResponse]);
+      setMessages((prev) => [...prev, errorMessage]);
+      toast.error((error as Error).message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setFile(event.target.files[0]);
+    }
+  };
+
+  const handleFileRemove = () => {
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -152,7 +225,7 @@ export function ChatInterface() {
                   placeholder="Ask about accounting, taxes, or financial planning..."
                   className="w-full h-16 pl-6 pr-16 text-lg border-2 border-gray-200 rounded-2xl bg-white shadow-md focus:shadow-lg focus:border-teal-300 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-all duration-300 placeholder:text-gray-400"
                 />
-                {message.trim() && (
+                { (message.trim() || file) && (
                   <Button
                     onClick={handleSend}
                     disabled={isLoading}
@@ -162,11 +235,20 @@ export function ChatInterface() {
                   </Button>
                 )}
               </div>
+              {file && (
+                <div className="flex items-center justify-between p-2 mt-2 bg-gray-100 rounded-lg text-sm">
+                  <span>{file.name}</span>
+                  <Button variant="ghost" size="icon" onClick={handleFileRemove} className="h-6 w-6">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
 
               {/* Action buttons */}
               <div className="flex items-center justify-center gap-3 mt-6">
                 <Button
                   variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
                   className="h-10 px-4 text-sm text-gray-600 hover:text-teal-700 hover:bg-teal-50 rounded-xl transition-all duration-200"
                 >
                   <Paperclip className="h-4 w-4 mr-2" />
@@ -233,7 +315,12 @@ export function ChatInterface() {
                       : "bg-white text-gray-800 border border-gray-100"
                   }`}
                 >
-                  <p className="text-base leading-relaxed">{msg.content}</p>
+                  <p className="text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  {msg.file && (
+                    <div className="mt-2 text-xs opacity-80 text-gray-400">
+                      Attached: {msg.file.name}
+                    </div>
+                  )}
                   <p
                     className={`text-xs mt-3 ${
                       msg.type === "user" ? "text-gray-400" : "text-gray-500"
@@ -261,6 +348,12 @@ export function ChatInterface() {
           </div>
         )}
       </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       {/* Input Area - for when there are messages */}
       {messages.length > 0 && (
@@ -273,17 +366,30 @@ export function ChatInterface() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask a follow-up question..."
-                  className="h-14 text-base border-2 border-gray-200 rounded-2xl bg-white focus:border-teal-300 focus:shadow-lg transition-all duration-300 pl-6 pr-4"
+                  className="h-14 text-base border-2 border-gray-200 rounded-2xl bg-white focus:border-teal-300 focus:shadow-lg transition-all duration-300 pl-14 pr-4"
                 />
+                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                    <Paperclip className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
               <Button
                 onClick={handleSend}
-                disabled={!message.trim() || isLoading}
+                disabled={(!message.trim() && !file) || isLoading}
                 className="h-14 w-14 p-0 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 rounded-2xl shadow-lg transition-all duration-200"
               >
                 <Send className="h-5 w-5 text-white" />
               </Button>
             </div>
+             {file && (
+              <div className="flex items-center justify-between p-2 mt-2 bg-gray-100 rounded-lg text-sm">
+                <span>{file.name}</span>
+                <Button variant="ghost" size="icon" onClick={handleFileRemove} className="h-6 w-6">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

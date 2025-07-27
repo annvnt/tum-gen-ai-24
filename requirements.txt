@@ -38,4 +38,11 @@ cryptography==41.0.7
 bcrypt==4.1.2
 
 # FastEmbed for embeddings
-fastembed==0.2.0
+fastembed==0.3.6
+
+# Redis for session management
+redis==4.6.0
+
+# Data visualization
+matplotlib==3.7.2
+reportlab==4.0.4

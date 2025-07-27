@@ -163,3 +163,4 @@ web/.next/
 web/.next/**/*
 **/.next/
 **/.next/**/*
+/qdrant_storage/collections/documents/0/segments/927a798d-63a1-450e-91a1-455e9b8a29fa/payload_index/000016.log
