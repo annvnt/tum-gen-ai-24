@@ -21,10 +21,10 @@ import { toast } from "sonner";
 
 // Adjusted Message type
 interface Message {
-    type: "user" | "bot";
-    content: string;
-    timestamp: Date;
-    file?: { name: string };
+  type: "user" | "bot";
+  content: string;
+  timestamp: Date;
+  file?: { name: string };
 }
 
 export function ChatInterface() {
@@ -89,9 +89,9 @@ export function ChatInterface() {
 
       // If there was also a text message, send it to the chat agent for a follow-up response.
       if (userMessageText.trim()) {
-        const chatResponse = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const chatResponse = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: userMessageText }),
         });
 
@@ -100,7 +100,7 @@ export function ChatInterface() {
         }
 
         const chatData = await chatResponse.json();
-        
+
         // Combine the analysis summary with the chat response.
         if (botResponseContent) {
           botResponseContent += `\n\n**Regarding your message:**\n${chatData.response}`;
@@ -112,7 +112,8 @@ export function ChatInterface() {
       if (!botResponseContent) {
         // This case should not happen if the function is exited at the start
         // but as a fallback.
-        botResponseContent = "I'm not sure how to respond to that. Please try again.";
+        botResponseContent =
+          "I'm not sure how to respond to that. Please try again.";
       }
 
       const botMessage: Message = {
@@ -121,7 +122,6 @@ export function ChatInterface() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
-
     } catch (error) {
       const errorMessage: Message = {
         type: "bot",
@@ -184,18 +184,6 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen relative">
-      {/* Settings Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/knowledge-base")}
-          className="p-3 bg-white/80 backdrop-blur-sm hover:bg-white shadow-lg rounded-xl border border-gray-200 transition-all duration-200"
-        >
-          <Settings className="h-4 w-4 text-gray-600" />
-        </Button>
-      </div>
-
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {messages.length === 0 ? (
@@ -225,7 +213,7 @@ export function ChatInterface() {
                   placeholder="Ask about accounting, taxes, or financial planning..."
                   className="w-full h-16 pl-6 pr-16 text-lg border-2 border-gray-200 rounded-2xl bg-white shadow-md focus:shadow-lg focus:border-teal-300 focus:ring-0 focus:ring-offset-0 focus:outline-none transition-all duration-300 placeholder:text-gray-400"
                 />
-                { (message.trim() || file) && (
+                {(message.trim() || file) && (
                   <Button
                     onClick={handleSend}
                     disabled={isLoading}
@@ -238,7 +226,12 @@ export function ChatInterface() {
               {file && (
                 <div className="flex items-center justify-between p-2 mt-2 bg-gray-100 rounded-lg text-sm">
                   <span>{file.name}</span>
-                  <Button variant="ghost" size="icon" onClick={handleFileRemove} className="h-6 w-6">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleFileRemove}
+                    className="h-6 w-6"
+                  >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -315,7 +308,9 @@ export function ChatInterface() {
                       : "bg-white text-gray-800 border border-gray-100"
                   }`}
                 >
-                  <p className="text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-base leading-relaxed whitespace-pre-wrap">
+                    {msg.content}
+                  </p>
                   {msg.file && (
                     <div className="mt-2 text-xs opacity-80 text-gray-400">
                       Attached: {msg.file.name}
@@ -337,10 +332,18 @@ export function ChatInterface() {
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
                     </div>
-                    <span className="text-sm text-gray-500">AI is thinking...</span>
+                    <span className="text-sm text-gray-500">
+                      AI is thinking...
+                    </span>
                   </div>
                 </div>
               </div>
@@ -368,8 +371,12 @@ export function ChatInterface() {
                   placeholder="Ask a follow-up question..."
                   className="h-14 text-base border-2 border-gray-200 rounded-2xl bg-white focus:border-teal-300 focus:shadow-lg transition-all duration-300 pl-14 pr-4"
                 />
-                 <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Paperclip className="h-5 w-5" />
                   </Button>
                 </div>
@@ -382,10 +389,15 @@ export function ChatInterface() {
                 <Send className="h-5 w-5 text-white" />
               </Button>
             </div>
-             {file && (
+            {file && (
               <div className="flex items-center justify-between p-2 mt-2 bg-gray-100 rounded-lg text-sm">
                 <span>{file.name}</span>
-                <Button variant="ghost" size="icon" onClick={handleFileRemove} className="h-6 w-6">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleFileRemove}
+                  className="h-6 w-6"
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>
