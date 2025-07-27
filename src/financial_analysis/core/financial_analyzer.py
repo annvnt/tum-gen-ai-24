@@ -87,55 +87,60 @@ def load_financial_indicators():
     return balance_str, income_str, cf_str
 
 def generate_prompt_from_df(df, balance_str, income_str, cf_str):
-    """Generate prompt for GPT based on financial data"""
+    """Generate a tailored prompt for GPT to produce well-formatted tables, a brief introduction, and an extensive CPA report with context retention."""
     table_str = df.to_string(index=False)
 
-    prompt = f"""
-    You are a financial analyst. Below is a table of daily financial data, which contains two key columns representing financial figures for two years.
-    The columns may have names such as "2023" and "2024", or "Last Year" and "Current Year", or similar variants.
+    prompt = f'''You are a Certified Public Accountant (CPA) and senior financial analyst.
 
-    {table_str}
+Begin your response with a concise introduction that outlines the purpose of the analysis and sets expectations for the detailed report. Then proceed with the following:
 
-    Below is a list of financial indicators that belong to the Balance Sheet section:
+Source Data:
+{table_str}
 
-    Balance Sheet Indicators:
-    {balance_str}
+Indicators:
+- Balance Sheet: {balance_str}
+- Income Statement: {income_str}
+- Cash Flow Statement: {cf_str}
 
-    Income Statement Indicators:
-    {income_str}
+Your tasks:
+- Identify the two year columns and base all comparisons on these.
+- Calculate each listed indicator for both years.
+- Present three tables: Balance Sheet, Income Statement, and Cash Flow:
+  • Use plain-text tables with aligned columns and even spacing.
+  • Enclose each table in triple backticks.
+  • Format numeric values with comma separators and two decimal places (e.g., 1,234,567.89).
+  • Right-align numeric columns with consistent widths.
+  • Omit any row where Prev Year or Curr Year is missing or "N/A".
+  Example:
+  ```
+  Indicator                        Prev Year      Curr Year
+  Cash and Cash Equivalents        1,000.00        1,000.00
+  ```
+- After tables, include a comprehensive introduction to the detailed analysis, then provide an extensive, element-by-element CPA-style report:
+  • Define each indicator.
+  • Present values for both years.
+  • Calculate and state absolute and percentage changes.
+  • Interpret each change (positive, negative, neutral) with precise accounting terminology.
+- Use dashes for section headings (e.g., "- Balance Sheet Analysis").
+- Ensure the output is clear, professional, and retains the dataset and results for follow-up queries.
 
-    Cash Flow Statement Indicators:
-    {cf_str}
+Output structure:
+- A short introductory paragraph explaining the analysis objective.
+- - Balance Sheet Table
+  ```
+  [Balance Sheet contents]
+  ```
+- - Income Statement Table
+  ```
+  [Income Statement contents]
+  ```
+- - Cash Flow Table
+  ```
+  [Cash Flow contents]
+  ```
+- - Detailed Analysis Report (each section starts with a dash)
 
-    Please:
-
-    1. Automatically detect and use the two columns that represent the two years (previous year and current year) to extract numeric data for all calculations.
-
-    2. Calculate all main financial indicators for both years based on these two columns.
-
-    3. Organize the financial indicators into three separate, clean Excel-style tables:
-    Each table must begin with a heading in the following format:
-     #### Balance Sheet Table
-     #### Income Statement Table
-     #### Cash Flow Statement Table
-
-    4. Each table must include two columns with numeric values: one for the current year and one for the previous year, enabling year-over-year comparison.
-
-    5. Generate a professional, human-readable financial summary report in English that highlights:
-      - Key revenue figures
-      - Cost and expense analysis
-      - Profitability overview
-      - Cash flow performance
-      - Meaningful comments on significant changes between the two years, based strictly on the numeric data from the two year columns
-
-    6. Avoid including qualitative or vague comments inside the tables—only present numeric financial figures.
-
-    7. Output two parts:
-      - A concise, professional financial summary report in English
-      - Three clearly formatted Excel-style tables with numeric data for both years side-by-side, ready for export
-
-    Use professional English.
-    """
+Write in professional English, using dashes for sections and backticks around tables for clarity, and provide thorough explanations throughout.'''
     return prompt
 
 def generate_financial_report(client, df, balance_str, income_str, cf_str):

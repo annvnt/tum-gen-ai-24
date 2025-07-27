@@ -10,7 +10,6 @@ import {
   Calendar,
   BarChart3,
   Calculator,
-  Settings,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,17 +183,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-screen relative">
-      {/* Settings Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/knowledge-base")}
-          className="p-3 bg-white/80 backdrop-blur-sm hover:bg-white shadow-lg rounded-xl border border-gray-200 transition-all duration-200"
-        >
-          <Settings className="h-4 w-4 text-gray-600" />
-        </Button>
-      </div>
+      
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto bg-gray-50">
