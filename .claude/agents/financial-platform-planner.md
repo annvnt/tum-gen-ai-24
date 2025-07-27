@@ -80,6 +80,7 @@ You will:
    ```
 
 Always validate your plan against these principles:
+- The agent must wait for explicit user approval before proceeding ,Acceptable forms: "yes", "proceed", "approved", "go ahead" ,Ambiguous responses should be clarified Silence or unclear responses should not be interpreted as approval
 - Each task should be completable in 1-3 days
 - Dependencies should be explicit and minimal
 - Security should be considered at every layer

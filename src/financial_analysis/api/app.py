@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#\!/usr/bin/env python3
 """
 FastAPI Backend for Financial Report Analysis
 Provides endpoints for uploading Excel files, analyzing financial data,
@@ -907,7 +907,7 @@ async def get_database_stats():
 
         # Get chat statistics
         with db_manager.get_session() as session:
-            from database import ChatHistory
+            from ..storage.database_manager import ChatHistory
             total_chats = session.query(ChatHistory).count()
             unique_sessions = session.query(ChatHistory.session_id).distinct().count()
 
@@ -957,35 +957,17 @@ async def search_documents(filename: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching documents: {str(e)}")
 
-# Add server info endpoint
-@app.get("/api/server/info")
-async def get_server_info():
-    """
-    Get server information and status
-    """
+# Health check endpoint for monitoring service status
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring service status."""
     return {
-        "service": "Financial Report API",
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
         "version": "1.0.0",
-        "database": "SQLite",
-        "database_file": "financial_reports.db",
-        "features": [
-            "Document upload and storage",
-            "Financial report generation",
-            "Persistent chat history",
-            "Document analysis",
-            "Report export",
-            "Vector processing with Jina embeddings",
-            "Vector similarity search",
-            "Qdrant vector database integration"
-        ],
-        "endpoints": {
-            "upload": "/api/financial/upload",
-            "chat": "/api/agent/chat",
-            "analyze": "/api/financial/analyze",
-            "export": "/api/financial/export/{report_id}",
-            "vector_process": "/api/vector/process",
-            "vector_search": "/api/vector/search",
-            "vector_status": "/api/vector/status/{file_id}"
+        "services": {
+            "api": "running",
+            "database": "connected" if db_manager else "disconnected"
         }
     }
 

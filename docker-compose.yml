@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: financial-report-api
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     volumes:
       - ./uploads:/app/src/uploads
       - ./data:/app/src/data
@@ -15,9 +15,16 @@ services:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
       - QDRANT_HOST=qdrant
+      - QDRANT_PORT=${QDRANT_PORT:-6333}
     depends_on:
       - qdrant
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   frontend:
     build:
@@ -25,20 +32,33 @@ services:
       dockerfile: Dockerfile
     container_name: financial-frontend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8000
-      - NEXT_PUBLIC_MAX_FILE_SIZE=52428800
+      - NEXT_PUBLIC_API_URL=http://localhost:${API_PORT:-8000}
+      - NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:${API_PORT:-8000}
+      - NEXT_PUBLIC_MAX_FILE_SIZE=52428850
+      - PORT=${FRONTEND_PORT:-3000}
     depends_on:
       - financial-report-api
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
     ports:
-      - "6333:6333"
+      - "${QDRANT_PORT:-6333}:6333"
     volumes:
       - ./qdrant_storage:/qdrant/storage
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s

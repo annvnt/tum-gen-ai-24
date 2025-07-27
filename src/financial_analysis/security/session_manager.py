@@ -7,7 +7,7 @@ import redis
 import json
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 import logging
 
 logger = logging.getLogger(__name__)

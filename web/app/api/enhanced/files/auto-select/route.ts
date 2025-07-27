@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,17 +12,17 @@ export async function POST(request: NextRequest) {
 
     if (!context) {
       return NextResponse.json(
-        { error: 'Context parameter is required' },
+        { error: "Context parameter is required" },
         { status: 400 }
       );
     }
 
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/enhanced/files/auto-select`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/enhanced/files/auto-select`;
     
     const response = await fetch(backendUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         context,
@@ -37,9 +38,9 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error auto-selecting files:', error);
+    console.error("Error auto-selecting files:", error);
     return NextResponse.json(
-      { error: 'Failed to auto-select files' },
+      { error: "Failed to auto-select files" },
       { status: 500 }
     );
   }

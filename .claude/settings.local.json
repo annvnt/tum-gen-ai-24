@@ -31,7 +31,9 @@
       "Bash(docker logs:*)",
       "Bash(docker rm:*)",
       "Bash(tdd-guard:*)",
-      "Bash(/Users/koussy/PycharmProjects/tum-gen-ai-24/docker-run.sh:*)"
+      "Bash(/Users/koussy/PycharmProjects/tum-gen-ai-24/docker-run.sh:*)",
+      "Bash(touch:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   },
@@ -43,6 +45,28 @@
           {
             "type": "command",
             "command": "tdd-guard"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -d \"hiccup\" ntfy.sh/claude-alert"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -d \"done!\" ntfy.sh/claude-alert"
           }
         ]
       }

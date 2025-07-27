@@ -18,7 +18,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import text
 
 from ..storage.database_manager import db_manager
-
+from .session_manager import SessionManager
 logger = logging.getLogger(__name__)
 
 # Security configuration
@@ -32,9 +32,9 @@ security = HTTPBearer()
 
 class UserCredentials(BaseModel):
     """User credentials model"""
-    username: str = Field(..., min_length=3, max_length=50, regex=r"^[a-zA-Z0-9_\-@.]+$")
+    username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_\-@.]+$")
     password: str = Field(..., min_length=8, max_length=128)
-    email: Optional[str] = Field(None, regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    email: Optional[str] = Field(None, pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 
 class TokenData(BaseModel):
@@ -48,7 +48,7 @@ class TokenData(BaseModel):
 class UserCreate(BaseModel):
     """User creation model"""
     username: str = Field(..., min_length=3, max_length=50)
-    email: str = Field(..., regex=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+    email: str = Field(..., pattern=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     password: str = Field(..., min_length=8, max_length=128)
     full_name: Optional[str] = Field(None, max_length=100)
     roles: List[str] = Field(default_factory=lambda: ["user"])
