@@ -20,8 +20,32 @@
       "Bash(./verify_webpack_ignore.sh:*)",
       "Bash(true)",
       "Bash(git clean:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(./docker-run.sh:*)",
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(npm install)",
+      "Bash(docker build:*)",
+      "Bash(npm run build)",
+      "Bash(docker run:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker rm:*)",
+      "Bash(tdd-guard:*)",
+      "Bash(/Users/koussy/PycharmProjects/tum-gen-ai-24/docker-run.sh:*)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tdd-guard"
+          }
+        ]
+      }
+    ]
   }
 }
