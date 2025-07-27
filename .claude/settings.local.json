@@ -33,7 +33,10 @@
       "Bash(tdd-guard:*)",
       "Bash(/Users/koussy/PycharmProjects/tum-gen-ai-24/docker-run.sh:*)",
       "Bash(touch:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(npm run build:*)",
+      "Bash(PYTHONPATH=src python -c \"\ntry:\n    from financial_analysis.api.app import app\n    from financial_analysis.storage.gcs_client import get_gcs_client\n    from financial_analysis.storage.gcs_path_utils import GCSPathManager\n    from financial_analysis.security.auth_manager import auth_manager\n    from financial_analysis.services.financial_agent import FinancialReportAgent\n    print(''✅ All core modules imported successfully'')\nexcept Exception as e:\n    print(f''❌ Import error: {e}'')\n    import traceback\n    traceback.print_exc()\n\")",
+      "Bash(PYTHONPATH=src python -c \"\nimport sys\nsys.path.insert(0, ''src'')\nimport os\n# Set mock environment to avoid GCS initialization\nos.environ[''GCS_BUCKET_NAME''] = ''test-bucket''\nos.environ[''GOOGLE_APPLICATION_CREDENTIALS''] = ''/dev/null''\n\n# Test syntax parsing without running initialization\ntry:\n    import ast\n    files_to_check = [\n        ''src/financial_analysis/api/app.py'',\n        ''src/financial_analysis/storage/gcs_client.py'',\n        ''src/financial_analysis/storage/gcs_path_utils.py'',\n        ''src/financial_analysis/security/auth_manager.py'',\n        ''src/financial_analysis/services/financial_agent.py''\n    ]\n    \n    for file_path in files_to_check:\n        try:\n            with open(file_path, ''r'') as f:\n                ast.parse(f.read())\n            print(f''✅ {file_path} - Syntax OK'')\n        except SyntaxError as e:\n            print(f''❌ {file_path} - Syntax Error: {e}'')\n        except Exception as e:\n            print(f''⚠️  {file_path} - Other Error: {e}'')\n            \n    print(''✅ All Python files have valid syntax'')\nexcept Exception as e:\n    print(f''❌ General error: {e}'')\n\")"
     ],
     "deny": []
   },
@@ -55,7 +58,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "curl -d \"hiccup\" ntfy.sh/claude-alert"
+            "command":"./claude-notify.sh"
           }
         ]
       }
@@ -66,7 +69,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "curl -d \"done!\" ntfy.sh/claude-alert"
+            "command":"./claude-notify.sh stop"
           }
         ]
       }
