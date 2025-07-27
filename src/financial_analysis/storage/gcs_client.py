@@ -7,43 +7,29 @@ from pathlib import Path
 
 class GCSClient:
     def __init__(self, credentials_path: str = None, bucket_name: str = None):
-        # Allow flexible credentials path
+        # Always use Docker path since we're container-only
         if credentials_path is None:
-            credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "/app/gcs-credentials.json")
-        
+            credentials_path = "/app/gcs-credentials.json"
         self.credentials_path = credentials_path
         self.bucket_name = bucket_name or os.getenv("GCS_BUCKET_NAME", "tum-gen-ai-storage")
         self.client = None
         self.bucket = None
-        self.use_local = False
         self._initialize_client()
     
     def _initialize_client(self):
-        """Initialize GCS client with fallback to local storage."""
         try:
-            # Try to initialize GCS client
-            if not os.path.exists(self.credentials_path):
-                raise FileNotFoundError(f"GCS credentials not found: {self.credentials_path}")
-            
             credentials = service_account.Credentials.from_service_account_file(
                 self.credentials_path
             )
             self.client = storage.Client(credentials=credentials)
             self.bucket = self.client.bucket(self.bucket_name)
-            print(f"✅ GCS client initialized successfully for bucket: {self.bucket_name}")
         except Exception as e:
-            print(f"⚠️ GCS initialization failed, using local storage: {str(e)}")
-            # Import local storage client
-            from .local_storage_client import get_local_storage_client
-            self.use_local = True
-            self.local_client = get_local_storage_client()
+            raise Exception(f"Failed to initialize GCS client: {str(e)}")
     
     def upload_file(self, file_data: BinaryIO, destination_blob_name: str, content_type: str = None) -> str:
-        """Upload a file to GCS or local storage."""
-        if self.use_local:
-            return self.local_client.upload_file(file_data, destination_blob_name, content_type)
-        
+        """Upload a file to GCS and return the blob name."""
         try:
+            # Normalize blob name to prevent duplication
             from .gcs_path_utils import GCSPathManager
             clean_blob_name = GCSPathManager.normalize_blob_name(destination_blob_name)
             
@@ -53,12 +39,23 @@ class GCSClient:
         except Exception as e:
             raise Exception(f"Failed to upload file to GCS: {str(e)}")
     
-    def download_file(self, blob_name: str) -> bytes:
-        """Download a file from GCS or local storage."""
-        if self.use_local:
-            return self.local_client.download_file(blob_name)
-        
+    def upload_file_from_path(self, file_path: str, destination_blob_name: str, content_type: str = None) -> str:
+        """Upload a file from local path to GCS and return the blob name."""
         try:
+            # Normalize blob name to prevent duplication
+            from .gcs_path_utils import GCSPathManager
+            clean_blob_name = GCSPathManager.normalize_blob_name(destination_blob_name)
+            
+            blob = self.bucket.blob(clean_blob_name)
+            blob.upload_from_filename(file_path, content_type=content_type)
+            return clean_blob_name
+        except Exception as e:
+            raise Exception(f"Failed to upload file from path to GCS: {str(e)}")
+    
+    def download_file(self, blob_name: str) -> bytes:
+        """Download a file from GCS and return its contents as bytes."""
+        try:
+            # Normalize blob name to prevent duplication
             from .gcs_path_utils import GCSPathManager
             clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
             
@@ -67,12 +64,22 @@ class GCSClient:
         except Exception as e:
             raise Exception(f"Failed to download file from GCS: {str(e)}")
     
-    def delete_file(self, blob_name: str):
-        """Delete a file from GCS or local storage."""
-        if self.use_local:
-            return self.local_client.delete_file(blob_name)
-        
+    def download_file_to_path(self, blob_name: str, destination_path: str):
+        """Download a file from GCS to a local path."""
         try:
+            # Normalize blob name to prevent duplication
+            from .gcs_path_utils import GCSPathManager
+            clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
+            
+            blob = self.bucket.blob(clean_blob_name)
+            blob.download_to_filename(destination_path)
+        except Exception as e:
+            raise Exception(f"Failed to download file from GCS to path: {str(e)}")
+    
+    def delete_file(self, blob_name: str):
+        """Delete a file from GCS."""
+        try:
+            # Normalize blob name to prevent duplication
             from .gcs_path_utils import GCSPathManager
             clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
             
@@ -81,12 +88,24 @@ class GCSClient:
         except Exception as e:
             raise Exception(f"Failed to delete file from GCS: {str(e)}")
     
-    def file_exists(self, blob_name: str) -> bool:
-        """Check if a file exists in GCS or local storage."""
-        if self.use_local:
-            return self.local_client.file_exists(blob_name)
-        
+    def list_files(self, prefix: str = None) -> list:
+        """List files in the bucket, optionally filtered by prefix."""
         try:
+            # Normalize prefix if provided
+            from .gcs_path_utils import GCSPathManager
+            if prefix:
+                prefix = GCSPathManager.normalize_blob_name(prefix)
+                blobs = self.bucket.list_blobs(prefix=prefix)
+            else:
+                blobs = self.bucket.list_blobs()
+            return [blob.name for blob in blobs]
+        except Exception as e:
+            raise Exception(f"Failed to list files in GCS: {str(e)}")
+    
+    def file_exists(self, blob_name: str) -> bool:
+        """Check if a file exists in GCS."""
+        try:
+            # Normalize blob name to prevent duplication
             from .gcs_path_utils import GCSPathManager
             clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
             
@@ -94,6 +113,33 @@ class GCSClient:
             return blob.exists()
         except Exception as e:
             raise Exception(f"Failed to check file existence in GCS: {str(e)}")
+    
+    def get_file_url(self, blob_name: str) -> str:
+        """Get the blob name for a file in GCS."""
+        try:
+            # Normalize blob name to prevent duplication
+            from .gcs_path_utils import GCSPathManager
+            clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
+            
+            blob = self.bucket.blob(clean_blob_name)
+            if not blob.exists():
+                raise Exception(f"File {clean_blob_name} does not exist")
+            return clean_blob_name
+        except Exception as e:
+            raise Exception(f"Failed to get file URL from GCS: {str(e)}")
+    
+    def get_file_size(self, blob_name: str) -> int:
+        """Get the size of a file in GCS."""
+        try:
+            # Normalize blob name to prevent duplication
+            from .gcs_path_utils import GCSPathManager
+            clean_blob_name = GCSPathManager.normalize_blob_name(blob_name)
+            
+            blob = self.bucket.blob(clean_blob_name)
+            blob.reload()
+            return blob.size
+        except Exception as e:
+            raise Exception(f"Failed to get file size from GCS: {str(e)}")
 
 # Singleton instance
 gcs_client = None
